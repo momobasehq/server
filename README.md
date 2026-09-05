@@ -13,7 +13,7 @@ library directly instead.
 ```sh
 cp .env.example .env      # fill in the three secrets, see below
 docker compose up -d
-docker compose run --rm momobase seed-admin -email you@example.com -password 'change me'
+docker compose run --rm momobase seed-admin --email you@example.com --password 'change me'
 ```
 
 The API is on `http://localhost:9090` and the dashboard on `http://localhost:9090/dashboard/`.
@@ -27,8 +27,10 @@ bin/momobase serve
 ```
 
 `.env.example` lists every variable and is the authoritative list; the table below is
-the subset a deployment usually sets. Flags override the environment: `-addr`,
-`-dashboard`, and `-dashboard-path`.
+the subset a deployment usually sets. A `.env` in the working directory is loaded at
+start-up and never overrides a variable the real environment already set. Flags beat
+both: `--addr`, `--dashboard`, and `--dashboard-path`. Run `momobase --help` for the
+commands.
 
 ## Generate the secrets
 
@@ -80,7 +82,7 @@ what each field does.
 
 ```sh
 momobase serve                              # default
-momobase seed-admin -email … -password …    # one-time, not idempotent
+momobase seed-admin --email … --password …  # one-time, not idempotent
 momobase version
 ```
 

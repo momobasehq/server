@@ -6,16 +6,18 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/momobasehq/momobase"
+	"github.com/spf13/cobra"
 
 	"github.com/momobasehq/server/providers"
 	"github.com/momobasehq/server/web"
@@ -25,25 +27,15 @@ import (
 var version = "dev"
 
 func main() {
-	if err := run(os.Args[1:]); err != nil {
-		fmt.Fprintln(os.Stderr, "momobase:", err)
+	// A .env beside the binary is a development convenience. godotenv never
+	// overwrites a variable the real environment already set, so a container that
+	// passes its configuration in still wins, and a missing file is the normal
+	// case rather than an error.
+	_ = godotenv.Load()
+
+	if err := newRootCommand().Execute(); err != nil {
 		os.Exit(1)
 	}
-}
-
-func run(args []string) error {
-	if len(args) > 0 {
-		switch args[0] {
-		case "version":
-			fmt.Println(version)
-			return nil
-		case "seed-admin":
-			return seedAdmin(args[1:])
-		case "serve":
-			args = args[1:]
-		}
-	}
-	return serve(args)
 }
 
 // dashboard holds the settings that belong to this binary rather than to the
@@ -53,29 +45,154 @@ type dashboard struct {
 	path    string
 }
 
-// newInstance builds the server from the environment and mounts the dashboard.
-// Flags are resolved after the environment so a flag always wins.
-func newInstance(args []string) (*momobase.Instance, dashboard, error) {
-	cfg, dash, err := config()
-	if err != nil {
-		return nil, dash, err
-	}
+// serverOptions carries the flags that override the environment.
+type serverOptions struct {
+	addr          string
+	dashboardPath string
+	dashboard     bool
+}
 
-	flags := flag.NewFlagSet("momobase", flag.ContinueOnError)
-	addr := flags.String("addr", cfg.App.Addr, "address the HTTP server listens on")
-	path := flags.String("dashboard-path", dash.path, "URL prefix the dashboard is served under")
-	enabled := flags.Bool("dashboard", dash.enabled, "serve the administration dashboard")
-	if err := flags.Parse(args); err != nil {
-		return nil, dash, err
+// apply overrides the resolved configuration with the flags the user actually
+// typed. Reading only the flags that changed is what keeps the order flag >
+// environment > default without the environment having to be read before the
+// command tree, and its flag defaults, exist.
+func (o *serverOptions) apply(cmd *cobra.Command, cfg *momobase.Config, dash *dashboard) {
+	flags := cmd.Flags()
+	if flags.Changed("addr") {
+		cfg.App.Addr = o.addr
 	}
-	cfg.App.Addr = *addr
-	dash.path = strings.TrimSuffix(*path, "/")
-	dash.enabled = *enabled
+	if flags.Changed("dashboard-path") {
+		dash.path = strings.TrimSuffix(o.dashboardPath, "/")
+	}
+	if flags.Changed("dashboard") {
+		dash.enabled = o.dashboard
+	}
+}
 
-	// Validated after the flags so a flag cannot smuggle in a setting the
-	// environment alone would have been rejected for.
+func (o *serverOptions) bind(cmd *cobra.Command) {
+	flags := cmd.Flags()
+	flags.StringVar(&o.addr, "addr", "", "address the HTTP server listens on (default $APP_ADDR)")
+	flags.StringVar(&o.dashboardPath, "dashboard-path", "", "URL prefix the dashboard is served under (default $DASHBOARD_PATH)")
+	// Registered false rather than true only so pflag stays quiet about a default
+	// that apply never reads; DASHBOARD_ENABLED, and its own default of true, is
+	// what decides this when the flag is absent.
+	flags.BoolVar(&o.dashboard, "dashboard", false, "serve the administration dashboard (default $DASHBOARD_ENABLED)")
+}
+
+func newRootCommand() *cobra.Command {
+	serve := newServeCommand()
+	root := &cobra.Command{
+		Use:   "momobase",
+		Short: "Momobase payment orchestration server",
+		Long: `Momobase payment orchestration server.
+
+Configuration is read from the environment and from a .env file in the working
+directory; .env.example lists every variable. Flags override both.`,
+		Version: version,
+		// A failure to start is not a usage mistake, so it must not print the usage.
+		SilenceUsage: true,
+		// Root runs the server itself, so without this a mistyped subcommand would
+		// be silently accepted as a positional argument and start one instead.
+		Args: cobra.NoArgs,
+		// The binary serves when given no subcommand, which is what the container
+		// image and a bare `bin/momobase` both rely on.
+		RunE: serve.RunE,
+	}
+	root.SetErrPrefix("momobase:")
+	// The same flag values back both commands, so `momobase --addr` and
+	// `momobase serve --addr` resolve identically.
+	root.Flags().AddFlagSet(serve.Flags())
+	root.AddCommand(serve, newSeedAdminCommand(), newVersionCommand())
+	return root
+}
+
+func newServeCommand() *cobra.Command {
+	var opts serverOptions
+	cmd := &cobra.Command{
+		Use:   "serve",
+		Short: "Run the API server and the dashboard",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			cfg, dash, err := config()
+			if err != nil {
+				return err
+			}
+			opts.apply(cmd, &cfg, &dash)
+
+			instance, err := newInstance(cfg, dash)
+			if err != nil {
+				return err
+			}
+			defer func() { _ = instance.Close() }()
+
+			instance.Logger().Info("momobase starting",
+				"version", version,
+				"addr", instance.Addr(),
+				"dashboard", dashboardTarget(dash),
+			)
+			return instance.Run()
+		},
+	}
+	opts.bind(cmd)
+	return cmd
+}
+
+// seed-admin creates the first administrator and exits. It is not idempotent:
+// running it twice with the same address fails on the uniqueness constraint.
+func newSeedAdminCommand() *cobra.Command {
+	var email, password, name string
+	cmd := &cobra.Command{
+		Use:   "seed-admin",
+		Short: "Create the first administrator and exit",
+		Args:  cobra.NoArgs,
+		RunE: func(_ *cobra.Command, _ []string) error {
+			email = cmp.Or(email, os.Getenv("ADMIN_EMAIL"))
+			password = cmp.Or(password, os.Getenv("ADMIN_PASSWORD"))
+			name = cmp.Or(name, os.Getenv("ADMIN_NAME"), "Administrator")
+			if email == "" || password == "" {
+				return errors.New("seed-admin needs --email and --password (or ADMIN_EMAIL and ADMIN_PASSWORD)")
+			}
+
+			cfg, dash, err := config()
+			if err != nil {
+				return err
+			}
+			// The dashboard is not mounted for a one-shot command, and never needs to be.
+			dash.enabled = false
+
+			instance, err := newInstance(cfg, dash)
+			if err != nil {
+				return err
+			}
+			defer func() { _ = instance.Close() }()
+			return instance.SeedAdmin(context.Background(), email, password, name)
+		},
+	}
+	flags := cmd.Flags()
+	flags.StringVar(&email, "email", "", "administrator email address (default $ADMIN_EMAIL)")
+	flags.StringVar(&password, "password", "", "administrator password (default $ADMIN_PASSWORD)")
+	flags.StringVar(&name, "name", "", "administrator display name (default $ADMIN_NAME)")
+	return cmd
+}
+
+func newVersionCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "version",
+		Short: "Print the version and exit",
+		Args:  cobra.NoArgs,
+		Run: func(*cobra.Command, []string) {
+			fmt.Println(version)
+		},
+	}
+}
+
+// newInstance builds the server from a fully resolved configuration and mounts the
+// dashboard when it is enabled.
+func newInstance(cfg momobase.Config, dash dashboard) (*momobase.Instance, error) {
+	// Validated after the flags have been applied so a flag cannot smuggle in a
+	// setting the environment alone would have been rejected for.
 	if err := cfg.Validate(); err != nil {
-		return nil, dash, err
+		return nil, err
 	}
 
 	instance, err := momobase.New(
@@ -83,27 +200,12 @@ func newInstance(args []string) (*momobase.Instance, dashboard, error) {
 		momobase.WithProviders(providers.All()),
 	)
 	if err != nil {
-		return nil, dash, err
+		return nil, err
 	}
 	if dash.enabled {
 		web.MountDashboard(instance.App(), dash.path)
 	}
-	return instance, dash, nil
-}
-
-func serve(args []string) error {
-	instance, dash, err := newInstance(args)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = instance.Close() }()
-
-	instance.Logger().Info("momobase starting",
-		"version", version,
-		"addr", instance.Addr(),
-		"dashboard", dashboardTarget(dash),
-	)
-	return instance.Run()
+	return instance, nil
 }
 
 func dashboardTarget(dash dashboard) string {
@@ -111,29 +213,6 @@ func dashboardTarget(dash dashboard) string {
 		return "disabled"
 	}
 	return dash.path + "/"
-}
-
-// seedAdmin creates the first administrator and exits. It is not idempotent:
-// running it twice with the same address fails on the uniqueness constraint.
-func seedAdmin(args []string) error {
-	flags := flag.NewFlagSet("seed-admin", flag.ContinueOnError)
-	email := flags.String("email", env("ADMIN_EMAIL", ""), "administrator email address")
-	password := flags.String("password", env("ADMIN_PASSWORD", ""), "administrator password")
-	name := flags.String("name", env("ADMIN_NAME", "Administrator"), "administrator display name")
-	if err := flags.Parse(args); err != nil {
-		return err
-	}
-	if *email == "" || *password == "" {
-		return errors.New("seed-admin needs -email and -password (or ADMIN_EMAIL and ADMIN_PASSWORD)")
-	}
-
-	// The dashboard is not mounted for a one-shot command, and never needs to be.
-	instance, _, err := newInstance([]string{"-dashboard=false"})
-	if err != nil {
-		return err
-	}
-	defer func() { _ = instance.Close() }()
-	return instance.SeedAdmin(context.Background(), *email, *password, *name)
 }
 
 // config resolves the server's configuration from the environment, starting from

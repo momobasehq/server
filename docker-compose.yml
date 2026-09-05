@@ -3,7 +3,7 @@
 # start rather than coming up with a key someone forgot to replace.
 #
 #   docker compose up -d
-#   docker compose run --rm momobase seed-admin -email you@example.com -password '...'
+#   docker compose run --rm momobase seed-admin --email you@example.com --password '...'
 #
 # Then open http://localhost:9090/dashboard/.
 
