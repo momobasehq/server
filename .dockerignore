@@ -1,0 +1,19 @@
+.git
+.github
+.env
+*.md
+Makefile
+docker-compose.yml
+Dockerfile
+
+# The image builds the bundle in its own stage, so a local node_modules or dist would
+# only be copied in and overwritten.
+dashboard/node_modules
+dashboard/dist
+dashboard/.env
+
+# Local build output and databases must not leak into the image.
+bin/
+data/
+*.out
+coverage.*

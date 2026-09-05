@@ -30,3 +30,14 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Dashboard toolchain and build output. dashboard/embed.go embeds dashboard/dist, so
+# `make build` builds the bundle first rather than carrying it in the repository.
+dashboard/node_modules/
+dashboard/dist/
+dashboard/.env
+
+# Local build output and databases.
+bin/
+/dist/
+data/

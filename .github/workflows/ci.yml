@@ -1,0 +1,68 @@
+name: CI
+
+on:
+    push:
+        branches:
+            - "**"
+    pull_request:
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    go:
+        name: Build and test
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - name: Check out repository
+              uses: actions/checkout@v7
+
+            - name: Set up Go
+              uses: actions/setup-go@v6
+              with:
+                  go-version-file: go.mod
+                  cache-dependency-path: go.sum
+
+            - name: Set up pnpm
+              uses: pnpm/setup@v2
+              with:
+                  version: ^11.24.0
+                  runtime: node@24
+
+            - name: Set up Node
+              uses: actions/setup-node@v7
+              with:
+                  node-version: 24
+                  cache: pnpm
+                  cache-dependency-path: dashboard/pnpm-lock.yaml
+
+            - name: Build dashboard bundle
+              run: make dashboard
+
+            - name: Verify formatting
+              shell: bash
+              run: |
+                  unformatted="$(gofmt -l $(git ls-files '*.go'))"
+                  if [[ -n "${unformatted}" ]]; then
+                    echo "The following files are not formatted:"
+                    echo "${unformatted}"
+                    exit 1
+                  fi
+
+            - name: Verify module files are tidy
+              run: go mod tidy -diff
+
+            - name: Vet
+              run: go vet ./...
+
+            # The SQLite driver links through cgo, so the race detector needs it on too.
+            - name: Test
+              env:
+                  CGO_ENABLED: "1"
+              run: go test -race ./...
