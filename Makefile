@@ -4,9 +4,6 @@ VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 build:
 	CGO_ENABLED=1 go build -trimpath -ldflags "-s -w -X main.version=$(VERSION)" -o $(BIN) ./cmd/momobase
 
-run: build
-	$(BIN) serve
-
 test:
 	CGO_ENABLED=1 go test -race ./...
 
@@ -27,9 +24,6 @@ tidy:
 dashboard:
 	cd dashboard && pnpm install && pnpm run build
 
-image:
-	docker build --build-arg VERSION=$(VERSION) -t ghcr.io/momobasehq/server:$(VERSION) .
-
 quality: fmt-check vet test
 
-.PHONY: build run test vet fmt fmt-check tidy dashboard image quality
+.PHONY: build test vet fmt fmt-check tidy dashboard quality
