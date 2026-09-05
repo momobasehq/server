@@ -1,0 +1,17 @@
+.git
+.github
+.env
+*.md
+Makefile
+docker-compose.yml
+Dockerfile
+
+# node_modules is never needed: the image builds from the committed dashboard/dist.
+dashboard/node_modules
+dashboard/.env
+
+# Local build output and databases must not leak into the image.
+bin/
+data/
+*.out
+coverage.*
