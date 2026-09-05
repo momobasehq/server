@@ -31,13 +31,13 @@ go.work.sum
 # .idea/
 # .vscode/
 
-# Dashboard toolchain. dashboard/dist is committed on purpose: dashboard/embed.go
-# embeds it, so `go build` alone produces a binary that serves the dashboard.
+# Dashboard toolchain and build output. dashboard/embed.go embeds dashboard/dist, so
+# `make build` builds the bundle first rather than carrying it in the repository.
 dashboard/node_modules/
+dashboard/dist/
 dashboard/.env
 
-# Local build output and databases. dist/ is anchored to the repository root: the
-# release workflow builds there, while dashboard/dist is committed and must not match.
+# Local build output and databases.
 bin/
 /dist/
 data/

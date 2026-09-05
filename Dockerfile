@@ -1,6 +1,19 @@
-# The dashboard bundle in dashboard/dist is committed and embedded by dashboard/embed.go,
-# so this image needs no Node stage. Rebuild the bundle with `make dashboard` when the
-# dashboard source changes; a stale dist ships silently otherwise.
+# dashboard/dist is not committed, so the bundle dashboard/embed.go embeds is built here
+# and copied into the Go build. --platform pins this stage to the builder's own
+# architecture: the bundle is the same bytes everywhere, so running Vite under emulation
+# once per target platform would cost minutes for an identical result.
+FROM --platform=$BUILDPLATFORM node:24-alpine AS dashboard
+
+RUN corepack enable
+
+WORKDIR /src/dashboard
+
+# The dependency install survives every edit that does not touch the manifests.
+COPY dashboard/package.json dashboard/pnpm-lock.yaml dashboard/pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
+
+COPY dashboard/ ./
+RUN pnpm run build
 
 FROM golang:1.26-alpine AS build
 
@@ -16,6 +29,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
+COPY --from=dashboard /src/dashboard/dist ./dashboard/dist
 
 ARG VERSION=dev
 RUN CGO_ENABLED=1 GOOS=linux go build \

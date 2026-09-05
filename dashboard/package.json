@@ -4,6 +4,7 @@
 	"private": true,
 	"type": "module",
 	"description": "Administration dashboard served by the Momobase binary.",
+	"packageManager": "pnpm@11.24.0",
 	"scripts": {
 		"dev": "vite",
 		"build": "tsc -b && vite build",

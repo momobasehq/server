@@ -1,13 +1,20 @@
 BIN ?= bin/momobase
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
-build:
+# dashboard/embed.go embeds dashboard/dist, which is not committed, so the bundle has
+# to exist before anything compiles the Go packages. Depending on the tracked dashboard
+# sources keeps a source edit from shipping a stale bundle without forcing a Vite run
+# on every build.
+BUNDLE := dashboard/dist/index.html
+DASHBOARD_SRC := $(shell git ls-files dashboard ':!:dashboard/*.go' 2>/dev/null)
+
+build: $(BUNDLE)
 	CGO_ENABLED=1 go build -trimpath -ldflags "-s -w -X main.version=$(VERSION)" -o $(BIN) ./cmd/momobase
 
-test:
+test: $(BUNDLE)
 	CGO_ENABLED=1 go test -race ./...
 
-vet:
+vet: $(BUNDLE)
 	go vet ./...
 
 fmt:
@@ -19,10 +26,10 @@ fmt-check:
 tidy:
 	go mod tidy
 
-# Rebuilds the bundle dashboard/embed.go embeds. dashboard/dist is committed, so run
-# this and commit the result whenever the dashboard source changes.
-dashboard:
-	cd dashboard && pnpm install && pnpm run build
+# `make dashboard` forces a rebuild; the file target lets every other rule ask for the
+# bundle and get one only when it is missing or older than the sources.
+$(BUNDLE) dashboard: $(DASHBOARD_SRC)
+	cd dashboard && pnpm install --frozen-lockfile && pnpm run build
 
 quality: fmt-check vet test
 

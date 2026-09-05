@@ -29,6 +29,21 @@ jobs:
                   go-version-file: go.mod
                   cache-dependency-path: go.sum
 
+            # dashboard/dist is not committed and dashboard/embed.go embeds it, so the
+            # bundle has to exist before anything compiles the Go packages.
+            - name: Set up pnpm
+              uses: pnpm/action-setup@v6
+
+            - name: Set up Node
+              uses: actions/setup-node@v7
+              with:
+                  node-version: 24
+                  cache: pnpm
+                  cache-dependency-path: dashboard/pnpm-lock.yaml
+
+            - name: Build dashboard bundle
+              run: make dashboard
+
             - name: Verify formatting
               shell: bash
               run: |

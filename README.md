@@ -94,11 +94,13 @@ there; remove `dummy` for a build that must not run it.
 ## The dashboard
 
 `dashboard/` is a Vite/React application whose built bundle in `dashboard/dist` is
-committed and embedded by `dashboard/embed.go`. That is why `go build` alone produces a
-binary that serves the dashboard, and why the Dockerfile needs no Node stage.
+embedded by `dashboard/embed.go`. The bundle is not committed, so it has to be built
+before the Go packages compile: `make build`, `make test` and `make vet` build it when
+it is missing or older than the dashboard sources, the workflows run `make dashboard`
+before anything Go, and the Dockerfile builds it in its own Node stage.
 
-The tradeoff is that the bundle can go stale: after changing anything under
-`dashboard/src`, run `make dashboard` and commit the result.
+That means a bare `go build` fails on a fresh clone until the bundle exists. Building it
+needs Node and pnpm; run `make dashboard` to force a rebuild.
 
 ## Releases
 
@@ -117,7 +119,7 @@ for that same reason.
 ```sh
 make quality      # fmt-check + vet + test
 make build
-make dashboard    # rebuild the embedded bundle
+make dashboard    # force a rebuild of the embedded bundle
 ```
 
 ## License
