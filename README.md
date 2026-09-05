@@ -1,8 +1,24 @@
-# Momobase Server
+<div align="center">
 
-The runnable distribution of [Momobase](https://github.com/momobasehq/momobase): a single
-binary carrying the payment orchestration API, the payment adapters compiled into it, and
-the administration dashboard.
+<img src="dashboard/public/brand.svg" alt="" width="80" height="80">
+
+<h1>Momobase Server</h1>
+
+<p>
+The runnable distribution of <a href="https://github.com/momobasehq/momobase">Momobase</a>:
+a single binary carrying the payment orchestration API, the payment adapters compiled
+into it, and the administration dashboard.
+</p>
+
+<p>
+<a href="https://github.com/momobasehq/server/actions/workflows/ci.yml"><img src="https://github.com/momobasehq/server/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+<a href="https://github.com/momobasehq/server/releases/latest"><img src="https://img.shields.io/github/v/release/momobasehq/server?label=release" alt="Latest release"></a>
+<a href="https://github.com/momobasehq/server/pkgs/container/server"><img src="https://img.shields.io/badge/ghcr.io-momobasehq%2Fserver-2496ed?logo=docker&logoColor=white" alt="Container image"></a>
+<a href="go.mod"><img src="https://img.shields.io/github/go-mod/go-version/momobasehq/server" alt="Go version"></a>
+<a href="#license"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT licence"></a>
+</p>
+
+</div>
 
 Momobase itself is a Go library you embed. This repository is the batteries-included host
 built on it — if you want to compile your own adapters into your own process, embed the
