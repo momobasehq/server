@@ -41,7 +41,7 @@ jobs:
             - name: Check out repository
               uses: actions/checkout@v7
               with:
-                  ref: ${{ inputs.tag || github.ref }}
+                  ref: ${{ inputs.tag || github.ref_name }}
 
             - name: Set up Go
               uses: actions/setup-go@v6
@@ -141,7 +141,7 @@ jobs:
             - name: Check out repository
               uses: actions/checkout@v6
               with:
-                  ref: ${{ inputs.tag || github.ref }}
+                  ref: ${{ inputs.tag || github.ref_name }}
 
             # arm64 is built under emulation. It is slow, which is why this job's
             # timeout is generous, but it keeps the image a single multi-arch manifest.
