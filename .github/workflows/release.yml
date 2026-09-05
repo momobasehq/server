@@ -39,7 +39,7 @@ jobs:
                     - { goos: darwin, goarch: arm64, runner: macos-latest }
         steps:
             - name: Check out repository
-              uses: actions/checkout@v6
+              uses: actions/checkout@v7
               with:
                   ref: ${{ inputs.tag || github.ref }}
 
@@ -49,10 +49,10 @@ jobs:
                   go-version-file: go.mod
                   cache-dependency-path: go.sum
 
-            # dashboard/dist is not committed and dashboard/embed.go embeds it, so the
-            # bundle has to exist before anything compiles the Go packages.
             - name: Set up pnpm
-              uses: pnpm/action-setup@v6
+              uses: pnpm/setup@v2
+              with:
+                  cache: true
 
             - name: Set up Node
               uses: actions/setup-node@v7
