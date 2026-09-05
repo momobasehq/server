@@ -30,3 +30,14 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Dashboard toolchain. dashboard/dist is committed on purpose: dashboard/embed.go
+# embeds it, so `go build` alone produces a binary that serves the dashboard.
+dashboard/node_modules/
+dashboard/.env
+
+# Local build output and databases. dist/ is anchored to the repository root: the
+# release workflow builds there, while dashboard/dist is committed and must not match.
+bin/
+/dist/
+data/
