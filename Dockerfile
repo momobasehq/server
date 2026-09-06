@@ -17,10 +17,6 @@ RUN pnpm run build
 
 FROM golang:1.26-alpine AS build
 
-# Momobase's SQLite driver links through cgo, so the build needs a C toolchain even
-# for a deployment that runs PostgreSQL: the driver is compiled either way.
-RUN apk add --no-cache gcc musl-dev
-
 WORKDIR /src
 
 # Dependencies resolve from the manifests alone, so this layer survives every source
@@ -31,8 +27,10 @@ RUN go mod download
 COPY . .
 COPY --from=dashboard /src/dashboard/dist ./dashboard/dist
 
+# The SQLite driver is pure Go, so nothing here links against libc and the binary
+# runs on any base image regardless of the C library it ships.
 ARG VERSION=dev
-RUN CGO_ENABLED=1 GOOS=linux go build \
+RUN CGO_ENABLED=0 GOOS=linux go build \
     -trimpath \
     -ldflags "-s -w -X main.version=${VERSION}" \
     -o /out/momobase ./cmd/momobase
