@@ -61,7 +61,8 @@ jobs:
             - name: Vet
               run: go vet ./...
 
-            # The SQLite driver links through cgo, so the race detector needs it on too.
+            # The race detector is implemented in C and refuses to run without cgo, so
+            # this is the one job that still needs it on.
             - name: Test
               env:
                   CGO_ENABLED: "1"

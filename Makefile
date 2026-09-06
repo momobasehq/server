@@ -9,8 +9,10 @@ BUNDLE := dashboard/dist/index.html
 DASHBOARD_SRC := $(shell git ls-files dashboard ':!:dashboard/*.go' 2>/dev/null)
 
 build: $(BUNDLE)
-	CGO_ENABLED=1 go build -trimpath -ldflags "-s -w -X main.version=$(VERSION)" -o $(BIN) ./cmd/momobase
+	CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=$(VERSION)" -o $(BIN) ./cmd/momobase
 
+# The race detector is the one thing here that still needs cgo: it is implemented in C
+# and refuses to run without it, whatever the SQLite driver is compiled from.
 test: $(BUNDLE)
 	CGO_ENABLED=1 go test -race ./...
 

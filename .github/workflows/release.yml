@@ -22,21 +22,12 @@ env:
     IMAGE: ghcr.io/${{ github.repository }}
 
 jobs:
+    # Every target cross-compiles from this one runner now that no target links C,
+    # which also means the dashboard bundle is built once rather than once per target.
     binaries:
-        name: ${{ matrix.goos }}/${{ matrix.goarch }}
-        runs-on: ${{ matrix.runner }}
+        name: Build release binaries
+        runs-on: ubuntu-latest
         timeout-minutes: 30
-        strategy:
-            fail-fast: false
-            matrix:
-                # Momobase's SQLite driver links through cgo, so every target is built
-                # on a runner of its own architecture. Cross-compiling would mean
-                # shipping a C toolchain per target for no benefit.
-                include:
-                    - { goos: linux, goarch: amd64, runner: ubuntu-latest }
-                    - { goos: linux, goarch: arm64, runner: ubuntu-24.04-arm }
-                    - { goos: darwin, goarch: amd64, runner: macos-13 }
-                    - { goos: darwin, goarch: arm64, runner: macos-latest }
         steps:
             - name: Check out repository
               uses: actions/checkout@v7
@@ -70,33 +61,30 @@ jobs:
               shell: bash
               run: echo "value=${{ inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
 
-            - name: Build
+            - name: Build and package
               shell: bash
               env:
-                  CGO_ENABLED: "1"
-                  GOOS: ${{ matrix.goos }}
-                  GOARCH: ${{ matrix.goarch }}
+                  CGO_ENABLED: "0"
                   VERSION: ${{ steps.version.outputs.value }}
               run: |
-                  mkdir -p dist
-                  go build -trimpath \
-                    -ldflags "-s -w -X main.version=${VERSION}" \
-                    -o dist/momobase ./cmd/momobase
+                  for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64; do
+                    export GOOS="${target%/*}" GOARCH="${target#*/}"
+                    # dist is rebuilt per target so a tarball cannot pick up the
+                    # previous architecture's binary alongside its own.
+                    rm -rf dist && mkdir -p dist
+                    go build -trimpath \
+                      -ldflags "-s -w -X main.version=${VERSION}" \
+                      -o dist/momobase ./cmd/momobase
+                    cp README.md LICENSE.txt dist/ 2>/dev/null || cp README.md dist/
+                    name="momobase_${VERSION}_${GOOS}_${GOARCH}"
+                    tar -czf "${name}.tar.gz" -C dist .
+                    shasum -a 256 "${name}.tar.gz" > "${name}.tar.gz.sha256"
+                  done
 
-            - name: Package
-              shell: bash
-              env:
-                  VERSION: ${{ steps.version.outputs.value }}
-              run: |
-                  name="momobase_${VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}"
-                  cp README.md LICENSE.txt dist/ 2>/dev/null || cp README.md dist/
-                  tar -czf "${name}.tar.gz" -C dist .
-                  shasum -a 256 "${name}.tar.gz" > "${name}.tar.gz.sha256"
-
-            - name: Upload build
+            - name: Upload builds
               uses: actions/upload-artifact@v7
               with:
-                  name: momobase-${{ matrix.goos }}-${{ matrix.goarch }}
+                  name: momobase-binaries
                   path: |
                       *.tar.gz
                       *.tar.gz.sha256
