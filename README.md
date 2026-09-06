@@ -34,7 +34,7 @@ docker compose run --rm momobase seed-admin --email you@example.com --password '
 Or a release binary, with SQLite:
 
 ```sh
-tar -xzf momobase_<version>_<os>_<arch>.tar.gz   # from the releases page
+unzip momobase_<version>_<os>_<arch>.zip   # from the releases page
 ./momobase seed-admin --email you@example.com --password 'change me'
 ./momobase serve
 ```
