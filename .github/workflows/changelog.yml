@@ -38,11 +38,9 @@ jobs:
 
             # Re-running a tag regenerates an identical file, and committing nothing fails the
             # step, so an unchanged changelog ends the job rather than the workflow run.
-            # status, not diff, because the first run writes a CHANGELOG.md that is still
-            # untracked, and diff reports untracked files as unchanged.
             - name: Commit changelog
               run: |
-                  if [ -z "$(git status --porcelain -- CHANGELOG.md)" ]; then
+                  if git diff --quiet -- CHANGELOG.md; then
                     echo "Changelog already current for ${{ github.ref_name }}."
                     exit 0
                   fi
