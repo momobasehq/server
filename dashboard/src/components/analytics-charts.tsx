@@ -27,19 +27,25 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 
 /** Shortens a bucket label for an axis and tooltip: the year is constant across a
- * chart's range. Typed loosely because Recharts hands the tooltip a ReactNode. */
-function tick(value: unknown) {
-	const period = String(value ?? "");
-	// "2026-08-18" -> "Aug 18"; "2026-08-18 14:00" -> "14:00"
-	if (period.includes(" ")) return period.split(" ")[1] ?? period;
-	const date = new Date(`${period}T00:00:00Z`);
-	return Number.isNaN(date.getTime())
-		? period
-		: date.toLocaleDateString(undefined, {
-				month: "short",
-				day: "numeric",
-				timeZone: "UTC",
-			});
+ * chart's range. Returns a formatter because the interval, not the label, decides
+ * whether a bucket reads as a date or a time — every label is now RFC3339 either way.
+ * Typed loosely because Recharts hands the tooltip a ReactNode. */
+function tickFor(interval: TransactionAnalytics["interval"] | undefined) {
+	return (value: unknown) => {
+		const period = String(value ?? "");
+		const date = new Date(period);
+		if (Number.isNaN(date.getTime())) return period;
+		// "2026-08-18T14:00:00Z" -> "14:00", sliced rather than formatted: the bucket
+		// is a UTC instant the server chose, and a locale time would shift it into the
+		// viewer's zone and label the wrong hour.
+		if (interval === "hour") return period.slice(11, 16);
+		// "2026-08-18T00:00:00Z" -> "Aug 18"
+		return date.toLocaleDateString(undefined, {
+			month: "short",
+			day: "numeric",
+			timeZone: "UTC",
+		});
+	};
 }
 
 /** Only every nth tick is drawn, so a 90-day range does not collide its own labels. */
@@ -79,6 +85,7 @@ export function TransactionsChart({
 	description,
 }: ChartProps) {
 	const buckets = data?.buckets ?? [];
+	const tick = tickFor(data?.interval);
 	const empty = !loading && buckets.every((bucket) => bucket.total === 0);
 
 	return (
@@ -169,6 +176,7 @@ export function ServiceMixChart({
 	description,
 }: ChartProps) {
 	const series = mixSeries(data?.buckets ?? []);
+	const tick = tickFor(data?.interval);
 	const empty =
 		!loading &&
 		series.every(
