@@ -42,6 +42,10 @@ unzip momobase_<version>_<os>_<arch>.zip   # from the releases page
 That starts unconfigured, on development placeholders and a local SQLite file. Set the
 secrets below before it is anything but a local instance.
 
+A release binary updates itself with `./momobase self-update`, which installs the latest
+release for its own platform and leaves restarting to you. Container deployments update
+by pulling a newer image instead.
+
 The API is then on `http://localhost:9090`, the dashboard on
 `http://localhost:9090/dashboard/`. Sign in with the administrator you just seeded.
 
