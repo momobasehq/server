@@ -67,18 +67,19 @@ jobs:
                   CGO_ENABLED: "0"
                   VERSION: ${{ steps.version.outputs.value }}
               run: |
-                  for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64; do
+                  for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64; do
                     export GOOS="${target%/*}" GOARCH="${target#*/}"
-                    # dist is rebuilt per target so a tarball cannot pick up the
+                    [ "$GOOS" = windows ] && ext=.exe || ext=""
+                    # dist is rebuilt per target so an archive cannot pick up the
                     # previous architecture's binary alongside its own.
                     rm -rf dist && mkdir -p dist
                     go build -trimpath \
                       -ldflags "-s -w -X main.version=${VERSION}" \
-                      -o dist/momobase ./cmd/momobase
+                      -o "dist/momobase${ext}" ./cmd/momobase
                     cp README.md LICENSE.txt dist/ 2>/dev/null || cp README.md dist/
                     name="momobase_${VERSION}_${GOOS}_${GOARCH}"
-                    tar -czf "${name}.tar.gz" -C dist .
-                    shasum -a 256 "${name}.tar.gz" > "${name}.tar.gz.sha256"
+                    zip -qj "${name}.zip" dist/*
+                    shasum -a 256 "${name}.zip" > "${name}.zip.sha256"
                   done
 
             - name: Upload builds
@@ -86,8 +87,8 @@ jobs:
               with:
                   name: momobase-binaries
                   path: |
-                      *.tar.gz
-                      *.tar.gz.sha256
+                      *.zip
+                      *.zip.sha256
                   if-no-files-found: error
                   retention-days: 7
 
@@ -115,7 +116,7 @@ jobs:
                   tag_name: ${{ inputs.tag || github.ref_name }}
                   generate_release_notes: true
                   files: |
-                      artifacts/*.tar.gz
+                      artifacts/*.zip
                       artifacts/SHA256SUMS
 
     image:
