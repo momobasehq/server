@@ -102,7 +102,7 @@ directory; .env.example lists every variable. Flags override both.`,
 	// The same flag values back both commands, so `momobase --addr` and
 	// `momobase serve --addr` resolve identically.
 	root.Flags().AddFlagSet(serve.Flags())
-	root.AddCommand(serve, newSeedAdminCommand(), newVersionCommand())
+	root.AddCommand(serve, newSeedAdminCommand(), newVersionCommand(), newSelfUpdateCommand())
 	return root
 }
 
