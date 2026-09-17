@@ -8,6 +8,7 @@ require (
 	github.com/gofiber/fiber/v3 v3.5.0
 	github.com/joho/godotenv v1.5.1
 	github.com/momobasehq/momobase v0.3.0
+	github.com/momobasehq/providers v0.1.0
 	github.com/spf13/cobra v1.10.2
 )
 
