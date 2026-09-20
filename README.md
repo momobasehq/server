@@ -47,7 +47,11 @@ release for its own platform and leaves restarting to you. Container deployments
 by pulling a newer image instead.
 
 The API is then on `http://localhost:9090`, the dashboard on
-`http://localhost:9090/dashboard/`. Sign in with the administrator you just seeded.
+`http://localhost:9090/_/`. Sign in with the administrator you just seeded.
+
+`http://localhost:9090/` is yours: put a directory named `mb_public` beside the binary
+and its files are served there — a landing page, a docs site, whatever you like. Without
+one, `/` redirects to the dashboard. The serving is the library's, through `PUBLIC_DIR`.
 
 ## Secrets
 
@@ -84,9 +88,10 @@ subset a deployment usually touches. What each one does is in the
 | `WORKERS_ENABLED`                                     | `true`                  | Disable on all but one replica      |
 | `AUTO_MIGRATE`                                        | `true`                  | Disable to migrate deliberately     |
 | `DASHBOARD_ENABLED`                                   | `true`                  | Set false to serve the API alone    |
-| `DASHBOARD_PATH`                                      | `/dashboard`            | URL prefix for the dashboard        |
+| `DASHBOARD_PATH`                                      | `/_`                    | URL prefix for the dashboard        |
+| `PUBLIC_DIR`                                          | `mb_public`             | Static files served at `/`; absent means `/` redirects to the dashboard |
 
-`--addr`, `--dashboard` and `--dashboard-path` are the flag equivalents.
+`--addr`, `--dashboard`, `--dashboard-path` and `--public-dir` are the flag equivalents.
 
 ## Commands
 

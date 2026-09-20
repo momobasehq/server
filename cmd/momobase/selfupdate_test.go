@@ -29,10 +29,8 @@ func zipWith(t *testing.T, names ...string) []byte {
 	return buf.Bytes()
 }
 
-// TestSumFor pins the parse against the exact SHA256SUMS the release job writes.
-// A checksum read from the wrong line, or a missing entry mistaken for a match,
-// would let an unverified archive through, so absence has to be an error rather
-// than an empty string.
+// TestSumFor pins the parse against the exact SHA256SUMS the release job writes: a
+// missing entry has to be an error rather than an empty string that matches nothing.
 func TestSumFor(t *testing.T) {
 	sums := []byte(
 		"aaaa  momobase_v1.2.3_linux_amd64.zip\n" +
@@ -64,9 +62,7 @@ func TestBinaryFrom(t *testing.T) {
 }
 
 // TestReplace covers the swap itself: the new bytes land at the original path,
-// executable, with no leftovers beside them. The rename dance is the one step
-// that cannot be retried safely, since a half-finished one leaves the host with
-// no installed binary at all.
+// executable, with no leftovers. A half-finished rename leaves no installed binary.
 func TestReplace(t *testing.T) {
 	dir := t.TempDir()
 	exe := filepath.Join(dir, "momobase")

@@ -5,9 +5,8 @@ import (
 	"io/fs"
 )
 
-// The all: prefix is load-bearing. Without it the embed pattern skips files whose
-// names begin with an underscore, which is exactly how Rollup names its shared
-// chunks — the build would succeed and the served app would 404 at run time.
+// The all: prefix is load-bearing: without it the pattern skips the underscore-prefixed
+// chunks Rollup emits, and the served app 404s at run time with no build error.
 //
 //go:embed all:dist
 var assets embed.FS

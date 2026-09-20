@@ -5,7 +5,7 @@
 #   docker compose up -d
 #   docker compose run --rm momobase seed-admin --email you@example.com --password '...'
 #
-# Then open http://localhost:9090/dashboard/.
+# Then open http://localhost:9090/_/.
 
 services:
     momobase:
@@ -42,6 +42,8 @@ services:
             APP_OAUTH_SECRET: ${APP_OAUTH_SECRET:?set APP_OAUTH_SECRET in .env}
         volumes:
             - momobase-data:/data
+            # Optional: anything in ./mb_public is served at /.
+            # - ./mb_public:/home/momobase/mb_public:ro
 
     db:
         image: postgres:18-alpine

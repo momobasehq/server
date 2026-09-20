@@ -19,9 +19,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// The release workflow publishes one flat zip per platform, named for the tag,
-// alongside a SHA256SUMS covering every archive in the release. Both facts are
-// what let this command find its download without listing the release's assets.
+// The release workflow publishes one flat zip per platform, named for the tag, beside a
+// SHA256SUMS for the release — which is how this finds its download without listing assets.
 const (
 	repo        = "momobasehq/server"
 	latestAPI   = "https://api.github.com/repos/" + repo + "/releases/latest"
@@ -84,9 +83,8 @@ func newSelfUpdateCommand() *cobra.Command {
 			if err := replace(exe, binary); err != nil {
 				return err
 			}
-			// Restarting is left to whoever supervises the process. Swapping a
-			// live server out from under its in-flight requests is not this
-			// command's call to make.
+			// Restarting is left to whoever supervises the process: swapping a live server out from
+			// under its in-flight requests is not this command's call to make.
 			fmt.Fprintf(out, "installed %s at %s; restart momobase to run it\n", tag, exe)
 			return nil
 		},
@@ -141,9 +139,8 @@ func download(tag string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Checked before anything is written, so a truncated or tampered download
-	// never reaches the disk as an executable. SHA256SUMS is unsigned, so this
-	// covers a corrupted transfer rather than a compromised release.
+	// Checked before anything is written, so a bad download never lands as an executable.
+	// SHA256SUMS is unsigned, so this covers corruption rather than a compromised release.
 	if got := sha256.Sum256(archive); hex.EncodeToString(got[:]) != want {
 		return nil, fmt.Errorf("%s does not match its published checksum", asset)
 	}
@@ -163,9 +160,8 @@ func get(url string) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-// sumFor returns the checksum SHA256SUMS records for one archive. The file is
-// the `shasum -a 256` output the release job concatenates: hex, two spaces, and
-// the bare file name.
+// sumFor returns the checksum SHA256SUMS records for one archive: the `shasum -a 256`
+// output the release job concatenates — hex, two spaces, and the bare file name.
 func sumFor(sums []byte, name string) (string, error) {
 	for _, line := range strings.Split(string(sums), "\n") {
 		if sum, file, ok := strings.Cut(strings.TrimSpace(line), "  "); ok && file == name {
@@ -175,9 +171,8 @@ func sumFor(sums []byte, name string) (string, error) {
 	return "", fmt.Errorf("%s is not listed in SHA256SUMS", name)
 }
 
-// binaryFrom pulls the executable out of the flat archive. Only the one exact
-// name is read and no path from the archive is ever joined onto a local one, so
-// a crafted entry has nowhere to escape to.
+// binaryFrom pulls the executable out of the flat archive. Only the one exact name is
+// read and no archive path is joined onto a local one, so a crafted entry cannot escape.
 func binaryFrom(archive []byte) ([]byte, error) {
 	r, err := zip.NewReader(bytes.NewReader(archive), int64(len(archive)))
 	if err != nil {
@@ -206,10 +201,8 @@ func probe(dir string) error {
 	return os.Remove(f.Name())
 }
 
-// replace swaps the running executable for the downloaded one. The temporary
-// file is created beside its target so the rename stays on a single filesystem
-// and is therefore atomic; writing to a temporary directory first would risk a
-// cross-device failure with the old binary already moved aside.
+// replace swaps the running executable for the downloaded one. The temporary file sits
+// beside its target, so the rename stays on one filesystem and is therefore atomic.
 func replace(exe string, binary []byte) error {
 	tmp, err := os.CreateTemp(filepath.Dir(exe), ".momobase-update-*")
 	if err != nil {
@@ -229,9 +222,8 @@ func replace(exe string, binary []byte) error {
 		return err
 	}
 
-	// Windows refuses to overwrite the image of a running process but will
-	// rename one, so the old binary is moved aside first everywhere rather than
-	// only there.
+	// Windows refuses to overwrite the image of a running process but will rename one, so
+	// the old binary is moved aside everywhere rather than only there.
 	old := exe + ".old"
 	_ = os.Remove(old)
 	if err := os.Rename(exe, old); err != nil {
