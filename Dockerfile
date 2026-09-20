@@ -46,6 +46,7 @@ RUN apk add --no-cache ca-certificates tzdata \
 COPY --from=build /out/momobase /usr/local/bin/momobase
 
 USER momobase
+# PUBLIC_DIR is relative, so a mounted mb_public is looked for here.
 WORKDIR /home/momobase
 
 # The default database path lives on the volume rather than the container's writable

@@ -27,10 +27,8 @@ import (
 var version = "dev"
 
 func main() {
-	// A .env beside the binary is a development convenience. godotenv never
-	// overwrites a variable the real environment already set, so a container that
-	// passes its configuration in still wins, and a missing file is the normal
-	// case rather than an error.
+	// A .env beside the binary is a development convenience: godotenv never overwrites a
+	// variable the real environment already set, and a missing file is the normal case.
 	_ = godotenv.Load()
 
 	if err := newRootCommand().Execute(); err != nil {
@@ -38,34 +36,37 @@ func main() {
 	}
 }
 
-// dashboard holds the settings that belong to this binary rather than to the
-// Momobase library, which knows nothing about a dashboard.
-type dashboard struct {
-	enabled bool
-	path    string
+// site holds the settings that belong to this binary rather than to the Momobase
+// library, which knows nothing about a dashboard. The public directory is the
+// library's own App.PublicDir.
+type site struct {
+	dashboard     bool
+	dashboardPath string
 }
 
 // serverOptions carries the flags that override the environment.
 type serverOptions struct {
 	addr          string
 	dashboardPath string
+	publicDir     string
 	dashboard     bool
 }
 
-// apply overrides the resolved configuration with the flags the user actually
-// typed. Reading only the flags that changed is what keeps the order flag >
-// environment > default without the environment having to be read before the
-// command tree, and its flag defaults, exist.
-func (o *serverOptions) apply(cmd *cobra.Command, cfg *momobase.Config, dash *dashboard) {
+// apply overrides the resolved configuration with the flags the user actually typed.
+// Reading only the flags that changed is what keeps flag > environment > default.
+func (o *serverOptions) apply(cmd *cobra.Command, cfg *momobase.Config, s *site) {
 	flags := cmd.Flags()
 	if flags.Changed("addr") {
 		cfg.App.Addr = o.addr
 	}
 	if flags.Changed("dashboard-path") {
-		dash.path = strings.TrimSuffix(o.dashboardPath, "/")
+		s.dashboardPath = strings.TrimSuffix(o.dashboardPath, "/")
 	}
 	if flags.Changed("dashboard") {
-		dash.enabled = o.dashboard
+		s.dashboard = o.dashboard
+	}
+	if flags.Changed("public-dir") {
+		cfg.App.PublicDir = o.publicDir
 	}
 }
 
@@ -73,9 +74,9 @@ func (o *serverOptions) bind(cmd *cobra.Command) {
 	flags := cmd.Flags()
 	flags.StringVar(&o.addr, "addr", "", "address the HTTP server listens on (default $APP_ADDR)")
 	flags.StringVar(&o.dashboardPath, "dashboard-path", "", "URL prefix the dashboard is served under (default $DASHBOARD_PATH)")
-	// Registered false rather than true only so pflag stays quiet about a default
-	// that apply never reads; DASHBOARD_ENABLED, and its own default of true, is
-	// what decides this when the flag is absent.
+	flags.StringVar(&o.publicDir, "public-dir", "", "directory served at / when it exists (default $PUBLIC_DIR)")
+	// Registered false rather than true only so pflag stays quiet about a default apply
+	// never reads; DASHBOARD_ENABLED, and its own default of true, decides this instead.
 	flags.BoolVar(&o.dashboard, "dashboard", false, "serve the administration dashboard (default $DASHBOARD_ENABLED)")
 }
 
@@ -113,13 +114,13 @@ func newServeCommand() *cobra.Command {
 		Short: "Run the API server and the dashboard",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			cfg, dash, err := config()
+			cfg, s, err := config()
 			if err != nil {
 				return err
 			}
-			opts.apply(cmd, &cfg, &dash)
+			opts.apply(cmd, &cfg, &s)
 
-			instance, err := newInstance(cfg, dash)
+			instance, err := newInstance(cfg, s)
 			if err != nil {
 				return err
 			}
@@ -128,7 +129,8 @@ func newServeCommand() *cobra.Command {
 			instance.Logger().Info("momobase starting",
 				"version", version,
 				"addr", instance.Addr(),
-				"dashboard", dashboardTarget(dash),
+				"dashboard", dashboardTarget(s),
+				"public", cmp.Or(instance.PublicDir(), "disabled"),
 			)
 			return instance.Run()
 		},
@@ -153,14 +155,14 @@ func newSeedAdminCommand() *cobra.Command {
 				return errors.New("seed-admin needs --email and --password (or ADMIN_EMAIL and ADMIN_PASSWORD)")
 			}
 
-			cfg, dash, err := config()
+			cfg, s, err := config()
 			if err != nil {
 				return err
 			}
-			// The dashboard is not mounted for a one-shot command, and never needs to be.
-			dash.enabled = false
+			// Nothing is served for a one-shot command, and never needs to be.
+			s.dashboard, cfg.App.PublicDir = false, ""
 
-			instance, err := newInstance(cfg, dash)
+			instance, err := newInstance(cfg, s)
 			if err != nil {
 				return err
 			}
@@ -186,9 +188,9 @@ func newVersionCommand() *cobra.Command {
 	}
 }
 
-// newInstance builds the server from a fully resolved configuration and mounts the
-// dashboard when it is enabled.
-func newInstance(cfg momobase.Config, dash dashboard) (*momobase.Instance, error) {
+// newInstance builds the server from a fully resolved configuration and mounts
+// what this binary serves on top of the library's routes.
+func newInstance(cfg momobase.Config, s site) (*momobase.Instance, error) {
 	// Validated after the flags have been applied so a flag cannot smuggle in a
 	// setting the environment alone would have been rejected for.
 	if err := cfg.Validate(); err != nil {
@@ -202,30 +204,29 @@ func newInstance(cfg momobase.Config, dash dashboard) (*momobase.Instance, error
 	if err != nil {
 		return nil, err
 	}
-	if dash.enabled {
-		web.MountDashboard(instance.App(), dash.path)
+	if s.dashboard {
+		web.MountDashboard(instance.App(), s.dashboardPath)
+		// momobase serves App.PublicDir at / when that directory exists; without one the
+		// root is only a way in to the dashboard, and without either it stays a 404.
+		if instance.PublicDir() == "" {
+			web.RedirectRoot(instance.App(), s.dashboardPath+"/")
+		}
 	}
 	return instance, nil
 }
 
-func dashboardTarget(dash dashboard) string {
-	if !dash.enabled {
+func dashboardTarget(s site) string {
+	if !s.dashboard {
 		return "disabled"
 	}
-	return dash.path + "/"
+	return s.dashboardPath + "/"
 }
 
 // config resolves the server's configuration from the environment, starting from
-// Momobase's development defaults and replacing what a deployment sets.
-//
-// The variable names and units are the ones .env.example documents: the library
-// stopped reading the environment, so reading it is this binary's job and the
-// names it answers to are part of its interface.
-//
-// Validation is left to the caller, which runs it after applying flags.
-func config() (momobase.Config, dashboard, error) {
+// Momobase's defaults. Validation is left to the caller, which runs it after flags.
+func config() (momobase.Config, site, error) {
 	cfg := momobase.DefaultConfig()
-	dash := dashboard{enabled: true, path: "/dashboard"}
+	s := site{dashboard: true, dashboardPath: "/_"}
 
 	cfg.App.Name = env("APP_NAME", cfg.App.Name)
 	cfg.App.Env = env("APP_ENV", cfg.App.Env)
@@ -268,7 +269,7 @@ func config() (momobase.Config, dashboard, error) {
 		{"CLEANUP_INTERVAL_SECONDS", time.Second, &cfg.Workers.CleanupInterval},
 	} {
 		if *field.target, err = duration(field.key, field.unit, *field.target); err != nil {
-			return cfg, dash, err
+			return cfg, s, err
 		}
 	}
 
@@ -281,15 +282,16 @@ func config() (momobase.Config, dashboard, error) {
 		{"RECONCILIATION_WORKER_ENABLED", &cfg.Workers.ReconciliationEnabled},
 		{"CLEANUP_WORKER_ENABLED", &cfg.Workers.CleanupEnabled},
 		{"AUTO_MIGRATE", &cfg.Features.AutoMigrate},
-		{"DASHBOARD_ENABLED", &dash.enabled},
+		{"DASHBOARD_ENABLED", &s.dashboard},
 	} {
 		if *field.target, err = boolean(field.key, *field.target); err != nil {
-			return cfg, dash, err
+			return cfg, s, err
 		}
 	}
 
-	dash.path = strings.TrimSuffix(env("DASHBOARD_PATH", dash.path), "/")
-	return cfg, dash, nil
+	s.dashboardPath = strings.TrimSuffix(env("DASHBOARD_PATH", s.dashboardPath), "/")
+	cfg.App.PublicDir = env("PUBLIC_DIR", cfg.App.PublicDir)
+	return cfg, s, nil
 }
 
 func env(key, fallback string) string {

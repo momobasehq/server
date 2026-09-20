@@ -1,4 +1,5 @@
-// Package web serves the administration dashboard bundled into the binary.
+// Package web serves the administration dashboard bundled into the binary and the
+// public directory an operator puts beside it.
 package web
 
 import (
@@ -14,9 +15,8 @@ import (
 	"github.com/momobasehq/server/dashboard"
 )
 
-// indexFile is the application shell every dashboard visit resolves to. The
-// dashboard routes on the URL hash, which browsers never send, so this is the only
-// document the server ever serves for it — there is no SPA fallback to get wrong.
+// indexFile is the application shell every dashboard visit resolves to: the dashboard
+// routes on the URL hash, which browsers never send, so there is no SPA fallback.
 const indexFile = "index.html"
 
 // handler serves the embedded dashboard bundle out of an fs.FS.
@@ -25,15 +25,8 @@ type handler struct {
 	etags  map[string]string
 }
 
-// newHandler indexes the bundle and precomputes an entity tag per file.
-//
-// embed.FS reports a zero ModTime, so a static file server emits no Last-Modified and
-// a conditional request has nothing to validate against — every asset would be
-// re-downloaded in full on every load. Hashing the contents once at start-up gives
-// each file a stable validator that survives restarts and is identical across
-// replicas, which a build timestamp would not be. Fiber's static middleware and its
-// etag middleware between them do not produce this, which is why the bundle is served
-// here rather than mounted.
+// newHandler indexes the bundle and precomputes an entity tag per file. embed.FS reports
+// a zero ModTime, so without one every asset is re-downloaded in full on every load.
 func newHandler(assets fs.FS) *handler {
 	h := &handler{assets: assets, etags: make(map[string]string)}
 	_ = fs.WalkDir(assets, ".", func(name string, entry fs.DirEntry, err error) error {
@@ -68,9 +61,8 @@ func (h *handler) serve(c fiber.Ctx) error {
 		return fiber.ErrNotFound
 	}
 
-	// The shell names the hashed assets, so a cached copy would go on pointing at a
-	// bundle the next deploy replaced; it must revalidate every time. The assets
-	// carry their content hash in the filename and can never change under it.
+	// The shell names the hashed assets, so a cached copy would point at a bundle the next
+	// deploy replaced; the assets carry their hash and can never change under it.
 	if name == indexFile {
 		c.Set(fiber.HeaderCacheControl, "no-cache")
 	} else {
