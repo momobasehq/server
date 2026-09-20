@@ -23,12 +23,8 @@ func indexHTML(t *testing.T) string {
 	return string(index)
 }
 
-// TestEveryReferencedAssetIsEmbedded catches a bundle that shipped incomplete.
-//
-// Vite writes hashed asset names into index.html, and `all:` is what keeps the
-// underscore-prefixed chunks among them from being skipped. Without this test a
-// dropped chunk produces a served page whose script tags 404 — a white screen with
-// no build error anywhere.
+// TestEveryReferencedAssetIsEmbedded catches a bundle that shipped incomplete: a dropped
+// chunk gives a served page whose script tags 404, a white screen with no build error.
 func TestEveryReferencedAssetIsEmbedded(t *testing.T) {
 	references := assetReference.FindAllString(indexHTML(t), -1)
 	if len(references) == 0 {
