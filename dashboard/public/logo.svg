@@ -6,11 +6,8 @@
     the bar rather than sit on top of it, so the mark reads as one closed form.
     Geometry is stroke-only at a 4-unit weight, which stays legible down to 16px.
   -->
-  <style>
-    :root { --logo-ink: #0b0b0b; }
-    @media (prefers-color-scheme: dark) { :root { --logo-ink: #ffffff; } }
-  </style>
-  <g fill="none" stroke="var(--logo-ink, #0b0b0b)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+  <rect width="32" height="32" fill="#000000" />
+  <g fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
     <path d="M6 21 L11 7 L16 15 L21 7 L26 21" />
     <path d="M6 25 H26" />
   </g>
