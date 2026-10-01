@@ -119,7 +119,7 @@ function CreateAccountDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-w-lg">
+			<DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-3xl">
 				<DialogHeader>
 					<DialogTitle>New provider account</DialogTitle>
 					<DialogDescription>
@@ -127,120 +127,121 @@ function CreateAccountDialog({
 						testing its configuration.
 					</DialogDescription>
 				</DialogHeader>
-				<FieldGroup>
-					<Field>
-						<FieldLabel htmlFor="provider-code">
-							Provider
-						</FieldLabel>
-						<Select
-							value={form.provider_code}
-							onValueChange={(code) =>
-								setForm({ ...form, provider_code: code ?? "" })
-							}
-						>
-							<SelectTrigger id="provider-code">
-								<SelectValue
-									placeholder={
-										registry.isPending
-											? "Loading…"
-											: "Select a registered provider"
+				<div className="grid gap-5 md:grid-cols-2">
+					<FieldGroup>
+						<Field>
+							<FieldLabel htmlFor="provider-code">
+								Provider
+							</FieldLabel>
+							<Select
+								value={form.provider_code}
+								onValueChange={(code) =>
+									setForm({ ...form, provider_code: code ?? "" })
+								}
+							>
+								<SelectTrigger id="provider-code">
+									<SelectValue
+										placeholder={
+											registry.isPending
+												? "Loading…"
+												: "Select a registered provider"
+										}
+									/>
+								</SelectTrigger>
+								<SelectContent>
+									{(registry.data?.providers ?? []).map(
+										(code) => (
+											<SelectItem key={code} value={code}>
+												{code}
+											</SelectItem>
+										),
+									)}
+								</SelectContent>
+							</Select>
+						</Field>
+						<Field>
+							<FieldLabel htmlFor="provider-name">Name</FieldLabel>
+							<Input
+								id="provider-name"
+								value={form.name}
+								onChange={(e) =>
+									setForm({ ...form, name: e.target.value })
+								}
+							/>
+						</Field>
+						<Field>
+							<FieldLabel htmlFor="provider-environment">
+								Environment
+							</FieldLabel>
+							<Select
+								value={form.environment}
+								onValueChange={(env) =>
+									setForm({
+										...form,
+										environment: env ?? "sandbox",
+									})
+								}
+							>
+								<SelectTrigger id="provider-environment">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="sandbox">Sandbox</SelectItem>
+									<SelectItem value="production">
+										Production
+									</SelectItem>
+								</SelectContent>
+							</Select>
+						</Field>
+						<FieldGroup className="grid grid-cols-2 gap-3">
+							<Field>
+								<FieldLabel htmlFor="provider-country">
+									Country
+								</FieldLabel>
+								<Input
+									id="provider-country"
+									maxLength={2}
+									value={form.country}
+									onChange={(event) =>
+										setForm({
+											...form,
+											country:
+												event.target.value.toUpperCase(),
+										})
 									}
 								/>
-							</SelectTrigger>
-							<SelectContent>
-								{(registry.data?.providers ?? []).map(
-									(code) => (
-										<SelectItem key={code} value={code}>
-											{code}
-										</SelectItem>
-									),
-								)}
-							</SelectContent>
-						</Select>
-					</Field>
-					<Field>
-						<FieldLabel htmlFor="provider-name">Name</FieldLabel>
-						<Input
-							id="provider-name"
-							value={form.name}
-							onChange={(e) =>
-								setForm({ ...form, name: e.target.value })
-							}
+							</Field>
+							<Field>
+								<FieldLabel htmlFor="provider-currency">
+									Currency
+								</FieldLabel>
+								<Input
+									id="provider-currency"
+									maxLength={3}
+									value={form.currency}
+									onChange={(event) =>
+										setForm({
+											...form,
+											currency:
+												event.target.value.toUpperCase(),
+										})
+									}
+								/>
+							</Field>
+						</FieldGroup>
+						<ChargeFields
+							id="new-provider-charges"
+							value={form.charges}
+							onChange={(charges) => setForm({ ...form, charges })}
 						/>
-					</Field>
-					<Field>
-						<FieldLabel htmlFor="provider-environment">
-							Environment
-						</FieldLabel>
-						<Select
-							value={form.environment}
-							onValueChange={(env) =>
-								setForm({
-									...form,
-									environment: env ?? "sandbox",
-								})
-							}
-						>
-							<SelectTrigger id="provider-environment">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="sandbox">Sandbox</SelectItem>
-								<SelectItem value="production">
-									Production
-								</SelectItem>
-							</SelectContent>
-						</Select>
-					</Field>
-					<FieldGroup className="grid grid-cols-2 gap-3">
-						<Field>
-							<FieldLabel htmlFor="provider-country">
-								Country
-							</FieldLabel>
-							<Input
-								id="provider-country"
-								maxLength={2}
-								value={form.country}
-								onChange={(event) =>
-									setForm({
-										...form,
-										country:
-											event.target.value.toUpperCase(),
-									})
-								}
-							/>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="provider-currency">
-								Currency
-							</FieldLabel>
-							<Input
-								id="provider-currency"
-								maxLength={3}
-								value={form.currency}
-								onChange={(event) =>
-									setForm({
-										...form,
-										currency:
-											event.target.value.toUpperCase(),
-									})
-								}
-							/>
-						</Field>
 					</FieldGroup>
-					<ChargeFields
-						id="new-provider-charges"
-						value={form.charges}
-						onChange={(charges) => setForm({ ...form, charges })}
-					/>
-					<Field>
+					<Field className="h-full">
 						<FieldLabel htmlFor="provider-config">
 							Configuration (JSON)
 						</FieldLabel>
 						<Textarea
 							id="provider-config"
-							rows={9}
-							className="font-mono"
+							className="min-h-40 flex-1 font-mono"
 							value={form.config}
 							onChange={(event) =>
 								setForm({ ...form, config: event.target.value })
@@ -252,7 +253,7 @@ function CreateAccountDialog({
 							<code>webhook_secret</code>.
 						</FieldDescription>
 					</Field>
-				</FieldGroup>
+				</div>
 				<DialogFooter>
 					<Button
 						variant="outline"
