@@ -422,12 +422,39 @@ export function AppDetail() {
 
 			{/* Tabs rather than a stack: the page now carries four unrelated concerns, and
           scrolling past credentials to reach the tester made both harder to find. */}
-			<Tabs defaultValue="credentials">
+			<Tabs defaultValue="analytics">
 				<TabsList>
-					<TabsTrigger value="credentials">Credentials</TabsTrigger>
 					<TabsTrigger value="analytics">Analytics</TabsTrigger>
+					<TabsTrigger value="credentials">Credentials</TabsTrigger>
 					<TabsTrigger value="testing">Testing</TabsTrigger>
 				</TabsList>
+
+				<TabsContent
+					value="analytics"
+					className="flex flex-col gap-4 pt-3"
+				>
+					{showAnalytics ? (
+						<>
+							{/* The app is fixed by the page, so its selector is suppressed; range and
+                  provider still apply. */}
+							<AnalyticsFilters
+								range={range}
+								onChange={setRange}
+								showApp={false}
+							/>
+							<ServiceMixChart
+								data={analytics.data}
+								loading={analytics.isPending}
+								title="This app's payments"
+								description="Collections and disbursements created by this app alone."
+							/>
+						</>
+					) : (
+						<p className="text-muted-foreground">
+							Requires the transactions:read permission.
+						</p>
+					)}
+				</TabsContent>
 
 				<TabsContent value="credentials" className="pt-3">
 					{showCredentials && (
@@ -468,33 +495,6 @@ export function AppDetail() {
 								/>
 							</CardContent>
 						</Card>
-					)}
-				</TabsContent>
-
-				<TabsContent
-					value="analytics"
-					className="flex flex-col gap-4 pt-3"
-				>
-					{showAnalytics ? (
-						<>
-							{/* The app is fixed by the page, so its selector is suppressed; range and
-                  provider still apply. */}
-							<AnalyticsFilters
-								range={range}
-								onChange={setRange}
-								showApp={false}
-							/>
-							<ServiceMixChart
-								data={analytics.data}
-								loading={analytics.isPending}
-								title="This app's payments"
-								description="Collections and disbursements created by this app alone."
-							/>
-						</>
-					) : (
-						<p className="text-muted-foreground">
-							Requires the transactions:read permission.
-						</p>
 					)}
 				</TabsContent>
 
