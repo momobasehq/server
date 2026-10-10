@@ -63,7 +63,7 @@ import { keys } from "@/lib/query-keys";
  * SecretDialog shows a client secret exactly once.
  *
  * The API returns the plaintext only on creation and rotation — it is stored hashed —
- * so this is the single moment it can be copied. Closing the dialog loses it for good,
+ * so this is the single moment it can be copied. Leaving the page loses it for good,
  * which the copy is explicit about rather than leaving the operator to find out later.
  */
 function SecretDialog({
@@ -102,7 +102,7 @@ function SecretDialog({
 					<TriangleAlert />
 					<AlertTitle>Shown once</AlertTitle>
 					<AlertDescription>
-						Closing this dialog discards the secret. Rotate the
+						Leaving this page discards the secret. Rotate the
 						credential to issue a new one.
 					</AlertDescription>
 				</Alert>
@@ -145,6 +145,8 @@ export function AppDetail() {
 	const { client, can } = useAuth();
 	const queryClient = useQueryClient();
 	const [created, setCreated] = useState<CreatedCredential>();
+	// The tester mounts only when its tab opens, so it reads the last secret from here.
+	const [issued, setIssued] = useState<CreatedCredential>();
 	const [naming, setNaming] = useState(false);
 	const [name, setName] = useState("");
 	const [editing, setEditing] = useState(false);
@@ -501,8 +503,8 @@ export function AppDetail() {
 				<TabsContent value="testing" className="pt-3">
 					{can(AdminPermissions.appsTest) ? (
 						<AppTester
-							clientId={created?.credential.client_id}
-							clientSecret={created?.client_secret}
+							clientId={issued?.credential.client_id}
+							clientSecret={issued?.client_secret}
 						/>
 					) : (
 						<p className="text-muted-foreground">
@@ -667,7 +669,10 @@ export function AppDetail() {
 
 			<SecretDialog
 				created={created}
-				onClose={() => setCreated(undefined)}
+				onClose={() => {
+					setIssued(created);
+					setCreated(undefined);
+				}}
 			/>
 		</div>
 	);
