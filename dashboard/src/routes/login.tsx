@@ -43,8 +43,8 @@ export function Login() {
 				<ThemeToggle />
 			</div>
 			<Card className="w-full max-w-sm">
-				<CardHeader>
-					<Logo className="size-8" />
+				<CardHeader className="justify-items-center text-center">
+					<Logo className="mb-2 size-12" />
 					<CardTitle>Sign in to Momobase</CardTitle>
 					<CardDescription>Administration console</CardDescription>
 				</CardHeader>
