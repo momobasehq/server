@@ -7,6 +7,7 @@ import { AdminPermissions, type App, type ChargeSchedule } from "momobase";
 
 import { DataTable, type Column } from "@/components/data-table";
 import { ChargeFields, zeroCharges } from "@/components/charge-fields";
+import { CurrencySelect } from "@/components/country-select";
 import { GuardedAction } from "@/components/guarded-action";
 import { PaginationControls } from "@/components/pagination-controls";
 import { StatusBadge } from "@/components/status-badge";
@@ -108,16 +109,10 @@ function CreateAppDialog({
 					</div>
 					<div className="flex flex-col gap-2">
 						<Label htmlFor="app-currency">Currency</Label>
-						<Input
+						<CurrencySelect
 							id="app-currency"
-							maxLength={3}
 							value={form.currency}
-							onChange={(event) =>
-								setForm({
-									...form,
-									currency: event.target.value.toUpperCase(),
-								})
-							}
+							onChange={(currency) => setForm({ ...form, currency })}
 						/>
 					</div>
 					<ChargeFields

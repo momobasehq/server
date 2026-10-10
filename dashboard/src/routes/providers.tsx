@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { DataTable, type Column } from "@/components/data-table";
 import { ChargeFields, zeroCharges } from "@/components/charge-fields";
+import { CountrySelect, CurrencySelect } from "@/components/country-select";
 import { GuardedAction } from "@/components/guarded-action";
 import { PaginationControls } from "@/components/pagination-controls";
 import { StatusBadge } from "@/components/status-badge";
@@ -198,34 +199,20 @@ function CreateAccountDialog({
 								<FieldLabel htmlFor="provider-country">
 									Country
 								</FieldLabel>
-								<Input
+								<CountrySelect
 									id="provider-country"
-									maxLength={2}
 									value={form.country}
-									onChange={(event) =>
-										setForm({
-											...form,
-											country:
-												event.target.value.toUpperCase(),
-										})
-									}
+									onChange={(country) => setForm({ ...form, country })}
 								/>
 							</Field>
 							<Field>
 								<FieldLabel htmlFor="provider-currency">
 									Currency
 								</FieldLabel>
-								<Input
+								<CurrencySelect
 									id="provider-currency"
-									maxLength={3}
 									value={form.currency}
-									onChange={(event) =>
-										setForm({
-											...form,
-											currency:
-												event.target.value.toUpperCase(),
-										})
-									}
+									onChange={(currency) => setForm({ ...form, currency })}
 								/>
 							</Field>
 						</FieldGroup>
@@ -384,34 +371,20 @@ function ConfigureDialog({
 									<FieldLabel htmlFor="edit-country">
 										Country
 									</FieldLabel>
-									<Input
+									<CountrySelect
 										id="edit-country"
-										maxLength={2}
 										value={settings.country}
-										onChange={(event) =>
-											setSettings({
-												...settings,
-												country:
-													event.target.value.toUpperCase(),
-											})
-										}
+										onChange={(country) => setSettings({ ...settings, country })}
 									/>
 								</Field>
 								<Field>
 									<FieldLabel htmlFor="edit-currency">
 										Currency
 									</FieldLabel>
-									<Input
+									<CurrencySelect
 										id="edit-currency"
-										maxLength={3}
 										value={settings.currency}
-										onChange={(event) =>
-											setSettings({
-												...settings,
-												currency:
-													event.target.value.toUpperCase(),
-											})
-										}
+										onChange={(currency) => setSettings({ ...settings, currency })}
 									/>
 								</Field>
 							</FieldGroup>

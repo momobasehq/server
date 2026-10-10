@@ -11,6 +11,7 @@ import { toast } from "sonner";
 
 import { DataTable, type Column } from "@/components/data-table";
 import { ChargeFields, zeroCharges } from "@/components/charge-fields";
+import { CurrencySelect } from "@/components/country-select";
 import { ServiceMixChart } from "@/components/analytics-charts";
 import {
 	AnalyticsFilters,
@@ -613,17 +614,10 @@ export function AppDetail() {
 						</div>
 						<div className="flex flex-col gap-2">
 							<Label htmlFor="edit-app-currency">Currency</Label>
-							<Input
+							<CurrencySelect
 								id="edit-app-currency"
-								maxLength={3}
 								value={details.currency}
-								onChange={(event) =>
-									setDetails({
-										...details,
-										currency:
-											event.target.value.toUpperCase(),
-									})
-								}
+								onChange={(currency) => setDetails({ ...details, currency })}
 							/>
 						</div>
 						<ChargeFields

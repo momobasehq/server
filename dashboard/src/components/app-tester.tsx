@@ -7,6 +7,7 @@ import {
 	type ServiceType,
 } from "momobase";
 
+import { CountrySelect, CurrencySelect } from "@/components/country-select";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -361,32 +362,18 @@ export function AppTester({ clientId, clientSecret }: AppTesterProps) {
 								<Label htmlFor="tester-currency">
 									Currency
 								</Label>
-								<Input
+								<CurrencySelect
 									id="tester-currency"
-									maxLength={3}
 									value={form.currency}
-									onChange={(event) =>
-										setForm({
-											...form,
-											currency:
-												event.target.value.toUpperCase(),
-										})
-									}
+									onChange={(currency) => setForm({ ...form, currency })}
 								/>
 							</div>
 							<div className="flex flex-col gap-2">
 								<Label htmlFor="tester-country">Country</Label>
-								<Input
+								<CountrySelect
 									id="tester-country"
-									maxLength={2}
 									value={form.country}
-									onChange={(event) =>
-										setForm({
-											...form,
-											country:
-												event.target.value.toUpperCase(),
-										})
-									}
+									onChange={(country) => setForm({ ...form, country })}
 									placeholder="Optional"
 								/>
 							</div>
