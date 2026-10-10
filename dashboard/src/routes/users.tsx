@@ -10,6 +10,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
+	CardAction,
 	CardContent,
 	CardDescription,
 	CardHeader,
@@ -303,7 +304,7 @@ export function Users() {
 					Console accounts and the roles that gate what they may
 					change.
 				</CardDescription>
-				<div className="ms-auto">
+				<CardAction>
 					<GuardedAction
 						permission={AdminPermissions.usersCreate}
 						size="sm"
@@ -311,7 +312,7 @@ export function Users() {
 					>
 						New administrator
 					</GuardedAction>
-				</div>
+				</CardAction>
 			</CardHeader>
 			<CardContent>
 				<DataTable

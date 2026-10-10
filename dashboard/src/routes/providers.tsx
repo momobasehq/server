@@ -16,6 +16,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
+	CardAction,
 	CardContent,
 	CardDescription,
 	CardHeader,
@@ -613,7 +614,7 @@ export function Providers() {
 						Configured adapters and the country and currency each
 						one serves.
 					</CardDescription>
-					<div className="ms-auto">
+					<CardAction>
 						<GuardedAction
 							permission={AdminPermissions.providersCreate}
 							size="sm"
@@ -621,7 +622,7 @@ export function Providers() {
 						>
 							New account
 						</GuardedAction>
-					</div>
+					</CardAction>
 				</CardHeader>
 				<CardContent>
 					<DataTable

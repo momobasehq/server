@@ -14,6 +14,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
+	CardAction,
 	CardContent,
 	CardDescription,
 	CardHeader,
@@ -264,7 +265,7 @@ export function Apps() {
 				<CardDescription>
 					Systems that create payments through the public API.
 				</CardDescription>
-				<div className="ms-auto">
+				<CardAction>
 					<GuardedAction
 						permission={AdminPermissions.appsCreate}
 						size="sm"
@@ -272,7 +273,7 @@ export function Apps() {
 					>
 						New app
 					</GuardedAction>
-				</div>
+				</CardAction>
 			</CardHeader>
 			<CardContent>
 				<DataTable

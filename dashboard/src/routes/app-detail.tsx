@@ -27,6 +27,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
+	CardAction,
 	CardContent,
 	CardDescription,
 	CardHeader,
@@ -327,7 +328,7 @@ export function AppDetail() {
 					<CardDescription>
 						{app.data?.description || "No description."}
 					</CardDescription>
-					<div className="ms-auto">
+					<CardAction>
 						<GuardedAction
 							permission={AdminPermissions.appsUpdate}
 							variant="outline"
@@ -344,7 +345,7 @@ export function AppDetail() {
 						>
 							Edit
 						</GuardedAction>
-					</div>
+					</CardAction>
 				</CardHeader>
 				<CardContent className="flex flex-wrap items-end gap-6">
 					<div>
@@ -437,7 +438,7 @@ export function AppDetail() {
 									Client credentials this app uses to obtain
 									access tokens.
 								</CardDescription>
-								<div className="ms-auto">
+								<CardAction>
 									<GuardedAction
 										permission={
 											AdminPermissions.credentialsCreate
@@ -447,7 +448,7 @@ export function AppDetail() {
 									>
 										New credential
 									</GuardedAction>
-								</div>
+								</CardAction>
 							</CardHeader>
 							<CardContent>
 								<DataTable
