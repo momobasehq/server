@@ -5,7 +5,11 @@ import { toast } from "sonner";
 
 import { DataTable, type Column } from "@/components/data-table";
 import { ChargeFields, zeroCharges } from "@/components/charge-fields";
-import { CountrySelect, CurrencySelect } from "@/components/country-select";
+import {
+	CountrySelect,
+	CurrencySelect,
+	Flag,
+} from "@/components/country-select";
 import { GuardedAction } from "@/components/guarded-action";
 import { PaginationControls } from "@/components/pagination-controls";
 import { StatusBadge } from "@/components/status-badge";
@@ -529,7 +533,12 @@ export function Providers() {
 		{
 			key: "country",
 			header: "Country",
-			cell: (account) => account.country,
+			cell: (account) => (
+				<span className="flex items-center gap-2">
+					<Flag code={account.country} />
+					{account.country}
+				</span>
+			),
 		},
 		{
 			key: "currency",

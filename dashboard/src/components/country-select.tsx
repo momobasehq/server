@@ -29,7 +29,7 @@ for (const country of countries) {
 }
 const currencyCodes = [...currencies.keys()].sort();
 
-function Flag({ code }: { code: string }) {
+export function Flag({ code }: { code: string }) {
 	const svg = flags[code];
 	return svg ? (
 		<img
