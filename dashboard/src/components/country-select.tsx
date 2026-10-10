@@ -40,6 +40,11 @@ export function Flag({ code }: { code: string }) {
 	) : null;
 }
 
+/** CurrencyFlag shows the flag of the country that issues a currency code. */
+export function CurrencyFlag({ code }: { code: string }) {
+	return <Flag code={currencies.get(code)?.flag ?? ""} />;
+}
+
 interface SelectProps {
 	id: string;
 	value: string;
@@ -95,7 +100,7 @@ export function CurrencySelect({ id, value, onChange }: SelectProps) {
 				<SelectValue>
 					{(code: string) => (
 						<>
-							<Flag code={currencies.get(code)?.flag ?? ""} />
+							<CurrencyFlag code={code} />
 							{code}
 						</>
 					)}
@@ -104,7 +109,7 @@ export function CurrencySelect({ id, value, onChange }: SelectProps) {
 			<SelectContent className="w-auto min-w-(--anchor-width)">
 				{currencyCodes.map((code) => (
 					<SelectItem key={code} value={code}>
-						<Flag code={currencies.get(code)!.flag} />
+						<CurrencyFlag code={code} />
 						{code}
 						<span className="text-muted-foreground">
 							{currencies.get(code)!.name}

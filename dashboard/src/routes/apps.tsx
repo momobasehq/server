@@ -7,7 +7,7 @@ import { AdminPermissions, type App, type ChargeSchedule } from "momobase";
 
 import { DataTable, type Column } from "@/components/data-table";
 import { ChargeFields, zeroCharges } from "@/components/charge-fields";
-import { CurrencySelect } from "@/components/country-select";
+import { CurrencyFlag, CurrencySelect } from "@/components/country-select";
 import { GuardedAction } from "@/components/guarded-action";
 import { PaginationControls } from "@/components/pagination-controls";
 import { StatusBadge } from "@/components/status-badge";
@@ -213,7 +213,16 @@ export function Apps() {
 			header: "Environment",
 			cell: (app) => <StatusBadge status={app.environment} />,
 		},
-		{ key: "currency", header: "Currency", cell: (app) => app.currency },
+		{
+			key: "currency",
+			header: "Currency",
+			cell: (app) => (
+				<span className="flex items-center gap-2">
+					<CurrencyFlag code={app.currency} />
+					{app.currency}
+				</span>
+			),
+		},
 		{
 			key: "status",
 			header: "Status",
