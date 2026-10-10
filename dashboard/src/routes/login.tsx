@@ -45,7 +45,7 @@ export function Login() {
 			<Card className="w-full max-w-sm">
 				<CardHeader className="justify-items-center text-center">
 					<Logo className="mb-2 size-12" />
-					<CardTitle>Sign in to Momobase</CardTitle>
+					<CardTitle className="text-xl">Sign in to Momobase</CardTitle>
 					<CardDescription>Administration console</CardDescription>
 				</CardHeader>
 				<CardContent>
