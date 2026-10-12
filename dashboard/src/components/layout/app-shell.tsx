@@ -62,8 +62,8 @@ export function AppShell() {
 		>
 			<Sidebar collapsible="icon">
 				<SidebarHeader>
-					<div className="flex items-center gap-2 px-2 py-1">
-						<Logo className="size-5 shrink-0" />
+					<div className="flex items-center gap-2 px-2 py-1 group-data-[collapsible=icon]:px-1">
+						<Logo className="size-6 shrink-0" />
 						{/* The mark alone survives the icon-width collapse; the word does not. */}
 						<span className="font-semibold tracking-tight group-data-[collapsible=icon]:hidden">
 							Momobase

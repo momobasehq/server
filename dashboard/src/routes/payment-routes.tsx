@@ -16,6 +16,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
+	CardAction,
 	CardContent,
 	CardDescription,
 	CardHeader,
@@ -327,7 +328,7 @@ export function PaymentRoutes() {
 					Which provider account serves each service and payment
 					method.
 				</CardDescription>
-				<div className="ms-auto">
+				<CardAction>
 					<GuardedAction
 						permission={AdminPermissions.routesCreate}
 						size="sm"
@@ -335,7 +336,7 @@ export function PaymentRoutes() {
 					>
 						New route
 					</GuardedAction>
-				</div>
+				</CardAction>
 			</CardHeader>
 			<CardContent>
 				<DataTable

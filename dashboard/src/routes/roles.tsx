@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
+	CardAction,
 	CardContent,
 	CardDescription,
 	CardHeader,
@@ -324,7 +325,7 @@ export function Roles() {
 					What each role of administrator may do. Seeded roles are
 					read-only; create one to grant a different set.
 				</CardDescription>
-				<div className="ms-auto">
+				<CardAction>
 					<GuardedAction
 						permission={AdminPermissions.rolesCreate}
 						size="sm"
@@ -332,7 +333,7 @@ export function Roles() {
 					>
 						New role
 					</GuardedAction>
-				</div>
+				</CardAction>
 			</CardHeader>
 			<CardContent>
 				<DataTable

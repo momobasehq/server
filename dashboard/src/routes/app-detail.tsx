@@ -11,6 +11,7 @@ import { toast } from "sonner";
 
 import { DataTable, type Column } from "@/components/data-table";
 import { ChargeFields, zeroCharges } from "@/components/charge-fields";
+import { CurrencySelect } from "@/components/country-select";
 import { ServiceMixChart } from "@/components/analytics-charts";
 import {
 	AnalyticsFilters,
@@ -26,6 +27,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
+	CardAction,
 	CardContent,
 	CardDescription,
 	CardHeader,
@@ -61,7 +63,7 @@ import { keys } from "@/lib/query-keys";
  * SecretDialog shows a client secret exactly once.
  *
  * The API returns the plaintext only on creation and rotation — it is stored hashed —
- * so this is the single moment it can be copied. Closing the dialog loses it for good,
+ * so this is the single moment it can be copied. Leaving the page loses it for good,
  * which the copy is explicit about rather than leaving the operator to find out later.
  */
 function SecretDialog({
@@ -100,7 +102,7 @@ function SecretDialog({
 					<TriangleAlert />
 					<AlertTitle>Shown once</AlertTitle>
 					<AlertDescription>
-						Closing this dialog discards the secret. Rotate the
+						Leaving this page discards the secret. Rotate the
 						credential to issue a new one.
 					</AlertDescription>
 				</Alert>
@@ -143,6 +145,8 @@ export function AppDetail() {
 	const { client, can } = useAuth();
 	const queryClient = useQueryClient();
 	const [created, setCreated] = useState<CreatedCredential>();
+	// The tester mounts only when its tab opens, so it reads the last secret from here.
+	const [issued, setIssued] = useState<CreatedCredential>();
 	const [naming, setNaming] = useState(false);
 	const [name, setName] = useState("");
 	const [editing, setEditing] = useState(false);
@@ -326,7 +330,7 @@ export function AppDetail() {
 					<CardDescription>
 						{app.data?.description || "No description."}
 					</CardDescription>
-					<div className="ms-auto">
+					<CardAction>
 						<GuardedAction
 							permission={AdminPermissions.appsUpdate}
 							variant="outline"
@@ -343,7 +347,7 @@ export function AppDetail() {
 						>
 							Edit
 						</GuardedAction>
-					</div>
+					</CardAction>
 				</CardHeader>
 				<CardContent className="flex flex-wrap items-end gap-6">
 					<div>
@@ -420,54 +424,12 @@ export function AppDetail() {
 
 			{/* Tabs rather than a stack: the page now carries four unrelated concerns, and
           scrolling past credentials to reach the tester made both harder to find. */}
-			<Tabs defaultValue="credentials">
+			<Tabs defaultValue="analytics">
 				<TabsList>
-					<TabsTrigger value="credentials">Credentials</TabsTrigger>
 					<TabsTrigger value="analytics">Analytics</TabsTrigger>
+					<TabsTrigger value="credentials">Credentials</TabsTrigger>
 					<TabsTrigger value="testing">Testing</TabsTrigger>
 				</TabsList>
-
-				<TabsContent value="credentials" className="pt-3">
-					{showCredentials && (
-						<Card>
-							<CardHeader>
-								<CardTitle>Credentials</CardTitle>
-								<CardDescription>
-									Client credentials this app uses to obtain
-									access tokens.
-								</CardDescription>
-								<div className="ms-auto">
-									<GuardedAction
-										permission={
-											AdminPermissions.credentialsCreate
-										}
-										size="sm"
-										onClick={() => setNaming(true)}
-									>
-										New credential
-									</GuardedAction>
-								</div>
-							</CardHeader>
-							<CardContent>
-								<DataTable
-									columns={columns}
-									rows={paged.items}
-									rowKey={(credential) => credential.id}
-									loading={paged.loading}
-									empty="This app has no credentials yet."
-								/>
-								<PaginationControls
-									page={paged.page}
-									perPage={paged.perPage}
-									total={paged.total}
-									count={paged.count}
-									onPageChange={paged.setPage}
-									busy={paged.fetching}
-								/>
-							</CardContent>
-						</Card>
-					)}
-				</TabsContent>
 
 				<TabsContent
 					value="analytics"
@@ -496,11 +458,53 @@ export function AppDetail() {
 					)}
 				</TabsContent>
 
+				<TabsContent value="credentials" className="pt-3">
+					{showCredentials && (
+						<Card>
+							<CardHeader>
+								<CardTitle>Credentials</CardTitle>
+								<CardDescription>
+									Client credentials this app uses to obtain
+									access tokens.
+								</CardDescription>
+								<CardAction>
+									<GuardedAction
+										permission={
+											AdminPermissions.credentialsCreate
+										}
+										size="sm"
+										onClick={() => setNaming(true)}
+									>
+										New credential
+									</GuardedAction>
+								</CardAction>
+							</CardHeader>
+							<CardContent>
+								<DataTable
+									columns={columns}
+									rows={paged.items}
+									rowKey={(credential) => credential.id}
+									loading={paged.loading}
+									empty="This app has no credentials yet."
+								/>
+								<PaginationControls
+									page={paged.page}
+									perPage={paged.perPage}
+									total={paged.total}
+									count={paged.count}
+									onPageChange={paged.setPage}
+									busy={paged.fetching}
+								/>
+							</CardContent>
+						</Card>
+					)}
+				</TabsContent>
+
 				<TabsContent value="testing" className="pt-3">
 					{can(AdminPermissions.appsTest) ? (
 						<AppTester
-							clientId={created?.credential.client_id}
-							clientSecret={created?.client_secret}
+							clientId={issued?.credential.client_id}
+							clientSecret={issued?.client_secret}
 						/>
 					) : (
 						<p className="text-muted-foreground">
@@ -613,17 +617,10 @@ export function AppDetail() {
 						</div>
 						<div className="flex flex-col gap-2">
 							<Label htmlFor="edit-app-currency">Currency</Label>
-							<Input
+							<CurrencySelect
 								id="edit-app-currency"
-								maxLength={3}
 								value={details.currency}
-								onChange={(event) =>
-									setDetails({
-										...details,
-										currency:
-											event.target.value.toUpperCase(),
-									})
-								}
+								onChange={(currency) => setDetails({ ...details, currency })}
 							/>
 						</div>
 						<ChargeFields
@@ -672,7 +669,10 @@ export function AppDetail() {
 
 			<SecretDialog
 				created={created}
-				onClose={() => setCreated(undefined)}
+				onClose={() => {
+					setIssued(created);
+					setCreated(undefined);
+				}}
 			/>
 		</div>
 	);

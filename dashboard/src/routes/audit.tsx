@@ -9,9 +9,27 @@ import {
 } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { usePagedQuery } from "@/hooks/use-paged-query";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, titleCase } from "@/lib/format";
 import { keys } from "@/lib/query-keys";
 import type { AuditLog } from "momobase";
+
+/** Party stacks an entity or actor type over its ID, cut to prefix and tail; hover shows it whole. */
+function Party({ type, id }: { type: string; id?: string }) {
+	const short =
+		id && id.length > 16
+			? `${id.slice(0, id.indexOf("_") + 1)}…${id.slice(-6)}`
+			: id;
+	return (
+		<div className="flex flex-col">
+			<span>{titleCase(type)}</span>
+			{id && (
+				<code className="text-muted-foreground" title={id}>
+					{short}
+				</code>
+			)}
+		</div>
+	);
+}
 
 const columns: Column<AuditLog>[] = [
 	{
@@ -22,14 +40,16 @@ const columns: Column<AuditLog>[] = [
 	{
 		key: "entity",
 		header: "Entity",
-		cell: (log) =>
-			`${log.entity_type || "—"} ${log.entity_id || ""}`.trim(),
+		cell: (log) => (
+			<Party type={log.entity_type || "—"} id={log.entity_id} />
+		),
 	},
 	{
 		key: "actor",
 		header: "Actor",
-		cell: (log) =>
-			`${log.actor_type || "system"} ${log.actor_id || ""}`.trim(),
+		cell: (log) => (
+			<Party type={log.actor_type || "system"} id={log.actor_id} />
+		),
 	},
 	{
 		key: "ip",
