@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { toast } from "sonner";
@@ -334,6 +335,7 @@ export function PaymentRoutes() {
 						size="sm"
 						onClick={() => setCreating(true)}
 					>
+						<Plus />
 						New route
 					</GuardedAction>
 				</CardAction>
@@ -352,6 +354,7 @@ export function PaymentRoutes() {
 					total={paged.total}
 					count={paged.count}
 					onPageChange={paged.setPage}
+					onPerPageChange={paged.setPerPage}
 					busy={paged.fetching}
 				/>
 			</CardContent>

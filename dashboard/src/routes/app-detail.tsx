@@ -6,7 +6,7 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
-import { ArrowLeft, Copy, TriangleAlert } from "lucide-react";
+import { ArrowLeft, Copy, Plus, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
 import { DataTable, type Column } from "@/components/data-table";
@@ -187,8 +187,7 @@ export function AppDetail() {
 	const paged = usePagedQuery(
 		(page) => keys.apps.credentials(appId, page),
 		(page) => client.apps.credentials(appId, page),
-		20,
-		showCredentials && Boolean(appId),
+		{ enabled: showCredentials && Boolean(appId) },
 	);
 
 	async function refreshCredentials() {
@@ -475,6 +474,7 @@ export function AppDetail() {
 										size="sm"
 										onClick={() => setNaming(true)}
 									>
+										<Plus />
 										New credential
 									</GuardedAction>
 								</CardAction>
@@ -493,6 +493,7 @@ export function AppDetail() {
 									total={paged.total}
 									count={paged.count}
 									onPageChange={paged.setPage}
+									onPerPageChange={paged.setPerPage}
 									busy={paged.fetching}
 								/>
 							</CardContent>

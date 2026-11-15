@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AdminPermissions, type AdminUser } from "momobase";
@@ -310,6 +311,7 @@ export function Users() {
 						size="sm"
 						onClick={() => setCreating(true)}
 					>
+						<Plus />
 						New administrator
 					</GuardedAction>
 				</CardAction>
@@ -327,6 +329,7 @@ export function Users() {
 					total={paged.total}
 					count={paged.count}
 					onPageChange={paged.setPage}
+					onPerPageChange={paged.setPerPage}
 					busy={paged.fetching}
 				/>
 			</CardContent>

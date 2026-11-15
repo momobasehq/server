@@ -142,14 +142,12 @@ export function Operations() {
 	const health = usePagedQuery(
 		keys.providers.health,
 		(page) => client.providers.health(page),
-		20,
-		showProviders,
+		{ enabled: showProviders },
 	);
 	const runtime = usePagedQuery(
 		keys.system.runtime,
 		(page) => client.system.runtimeProviders(page),
-		20,
-		showProviders,
+		{ enabled: showProviders },
 	);
 
 	return (
@@ -174,6 +172,7 @@ export function Operations() {
 						total={workers.total}
 						count={workers.count}
 						onPageChange={workers.setPage}
+						onPerPageChange={workers.setPerPage}
 						busy={workers.fetching}
 					/>
 				</CardContent>
@@ -202,6 +201,7 @@ export function Operations() {
 							total={health.total}
 							count={health.count}
 							onPageChange={health.setPage}
+							onPerPageChange={health.setPerPage}
 							busy={health.fetching}
 						/>
 					</CardContent>
@@ -230,6 +230,7 @@ export function Operations() {
 							total={runtime.total}
 							count={runtime.count}
 							onPageChange={runtime.setPage}
+							onPerPageChange={runtime.setPerPage}
 							busy={runtime.fetching}
 						/>
 					</CardContent>
