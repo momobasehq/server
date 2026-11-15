@@ -248,7 +248,9 @@ export function AppTester({ clientId, clientSecret }: AppTesterProps) {
 								onClick={() =>
 									void run("Payment methods", async (app) => {
 										const available =
-											await app.paymentMethods.list();
+											await app.paymentMethods.list({
+												country: form.country,
+											});
 										setMethods(available.items);
 										// Adopt the first method so the payment form is usable immediately.
 										if (
