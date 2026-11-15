@@ -1,6 +1,33 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import {
+	columnFilteringFeature,
+	columnVisibilityFeature,
+	createFilteredRowModel,
+	createSortedRowModel,
+	globalFilteringFeature,
+	rowSelectionFeature,
+	rowSortingFeature,
+	sortFn_alphanumeric,
+	sortFn_basic,
+	sortFn_datetime,
+	sortFn_text,
+	tableFeatures,
+	useTable,
+	type ColumnDef,
+	type OnChangeFn,
+	type ReactTable,
+	type Row,
+	type RowData,
+	type RowSelectionState,
+} from "@tanstack/react-table";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 
+import { ColumnToggle, useColumnVisibility } from "@/components/column-toggle";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import {
 	Table,
 	TableBody,
@@ -10,22 +37,63 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 
-/** Column describes one column of a DataTable. */
-export interface Column<T> {
-	/** Stable identifier, also used as the React key. */
-	key: string;
-	/** Header label. */
-	header: ReactNode;
-	/** Renders the cell for one row. */
-	cell: (row: T) => ReactNode;
-	/** Right-aligns numeric columns. */
-	align?: "start" | "end";
-	/** Keeps the column out of the visibility toggle, for identifying columns. */
-	required?: boolean;
+/**
+ * contains matches a search term anywhere in a cell's raw value, case-insensitively.
+ * Values are stringified so numbers, dates and enums are searchable alike.
+ */
+function contains<TFeatures extends typeof base, T extends RowData>(
+	row: Row<TFeatures, T>,
+	columnId: string,
+	term: string,
+) {
+	const value = row.getValue(columnId);
+	return (
+		value != null &&
+		String(value).toLowerCase().includes(term.trim().toLowerCase())
+	);
 }
 
-interface DataTableProps<T> {
-	columns: Column<T>[];
+const base = {
+	// Global search runs through the column filter pipeline, so both are needed.
+	columnFilteringFeature,
+	columnVisibilityFeature,
+	globalFilteringFeature,
+	rowSelectionFeature,
+	rowSortingFeature,
+};
+
+/**
+ * The shadcn data-table guide's feature set. Lists are paged on the server, so search
+ * and sorting act on the loaded page only, hence "Filter rows" rather than "Search".
+ */
+export const features = tableFeatures({
+	...base,
+	filteredRowModel: createFilteredRowModel(),
+	sortedRowModel: createSortedRowModel(),
+	filterFns: { contains },
+	sortFns: {
+		alphanumeric: sortFn_alphanumeric,
+		basic: sortFn_basic,
+		datetime: sortFn_datetime,
+		text: sortFn_text,
+	},
+	columnMeta: {} as {
+		/** Right-aligns numeric columns. */
+		align?: "start" | "end";
+	},
+});
+
+export type Features = typeof features;
+
+/** DataColumn is one column definition for a DataTable of T. Columns with an
+ * accessorFn are sortable and searchable; display-only columns are neither. */
+// `any` value: accessors return mixed types, and cells render from row.original.
+export type DataColumn<T extends RowData> = ColumnDef<Features, T, any>;
+
+export type DataTableInstance<T extends RowData> = ReactTable<Features, T>;
+
+interface DataTableProps<T extends RowData> {
+	columns: DataColumn<T>[];
 	rows: T[];
 	rowKey: (row: T) => string;
 	loading?: boolean;
@@ -33,113 +101,243 @@ interface DataTableProps<T> {
 	empty?: ReactNode;
 	/** Makes each populated row an accessible action. */
 	onRowClick?: (row: T) => void;
-	/** Column keys to leave out, from useColumnVisibility. */
-	hidden?: ReadonlySet<string>;
+	/** Remembers this table's column visibility across visits under this name. */
+	tableId?: string;
+	/** Controlled selection, keyed by rowKey; pair with selectColumn(). */
+	rowSelection?: RowSelectionState;
+	onRowSelectionChange?: OnChangeFn<RowSelectionState>;
+	/** Rows that cannot take the bulk action get a disabled box. */
+	canSelect?: (row: T) => boolean;
+	/** Extra toolbar controls, beside search and the Columns menu. */
+	toolbar?: ReactNode;
 }
 
 /**
- * DataTable renders a list response as a table. It is a composition of shadcn/ui's
- * Table parts rather than a component of its own, so it inherits the theme and every
- * screen's tables stay identical without a shared abstraction to maintain.
+ * DataTable renders a list response as a TanStack table over shadcn/ui's Table parts,
+ * following shadcn's data-table guide, so every screen's tables stay identical.
  */
-export function DataTable<T>({
-	columns: allColumns,
+export function DataTable<T extends RowData>({
+	columns,
 	rows,
 	rowKey,
 	loading,
 	empty,
 	onRowClick,
-	hidden,
+	tableId,
+	rowSelection,
+	onRowSelectionChange,
+	canSelect,
+	toolbar,
 }: DataTableProps<T>) {
-	const columns = hidden
-		? allColumns.filter((column) => !hidden.has(column.key))
-		: allColumns;
+	const [globalFilter, setGlobalFilter] = useState("");
+	const visibility = useColumnVisibility(tableId);
+	const table = useTable({
+		features,
+		columns,
+		data: rows,
+		getRowId: rowKey,
+		globalFilterFn: "contains",
+		enableRowSelection: canSelect
+			? (row) => canSelect(row.original)
+			: true,
+		state: {
+			globalFilter,
+			columnVisibility: visibility.columnVisibility,
+			...(rowSelection && { rowSelection }),
+		},
+		onGlobalFilterChange: setGlobalFilter,
+		onColumnVisibilityChange: visibility.onColumnVisibilityChange,
+		onRowSelectionChange,
+	});
+	const visibleCount = table.getVisibleLeafColumns().length;
+	const shown = table.getRowModel().rows;
+
 	return (
-		// Wide tables scroll inside their own container rather than the page.
-		<div className="w-full overflow-x-auto">
-			<Table>
-				<TableHeader>
-					<TableRow>
-						{columns.map((column) => (
-							<TableHead
-								key={column.key}
-								className={
-									column.align === "end"
-										? "text-end"
-										: undefined
-								}
-							>
-								{column.header}
-							</TableHead>
-						))}
-					</TableRow>
-				</TableHeader>
-				<TableBody>
-					{loading && rows.length === 0
-						? Array.from({ length: 5 }, (_, index) => (
-								<TableRow key={`skeleton-${index}`}>
-									{columns.map((column) => (
-										<TableCell key={column.key}>
-											<Skeleton className="h-4 w-full" />
-										</TableCell>
-									))}
-								</TableRow>
-							))
-						: rows.map((row) => (
-								<TableRow
-									key={rowKey(row)}
-									role={onRowClick ? "button" : undefined}
-									tabIndex={onRowClick ? 0 : undefined}
-									className={
-										onRowClick
-											? "cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
-											: undefined
-									}
-									onClick={
-										onRowClick
-											? () => onRowClick(row)
-											: undefined
-									}
-									onKeyDown={
-										onRowClick
-											? (event) => {
-													if (
-														event.key === "Enter" ||
-														event.key === " "
-													) {
-														event.preventDefault();
-														onRowClick(row);
-													}
+		<div className="flex flex-col gap-2">
+			<div className="flex flex-wrap items-center gap-2">
+				<Input
+					placeholder="Filter rows…"
+					aria-label="Filter rows"
+					value={globalFilter}
+					onChange={(event) => setGlobalFilter(event.target.value)}
+					className="h-7 max-w-xs"
+				/>
+				{toolbar}
+				<ColumnToggle table={table} />
+			</div>
+			{/* Wide tables scroll inside their own container rather than the page. */}
+			<div className="w-full overflow-x-auto">
+				<Table>
+					<TableHeader>
+						{table.getHeaderGroups().map((group) => (
+							<TableRow key={group.id}>
+								{group.headers.map((header) => (
+									<TableHead
+										key={header.id}
+										className={alignClass(
+											header.column.columnDef.meta?.align,
+										)}
+									>
+										{header.isPlaceholder ? null : header.column.getCanSort() ? (
+											<SortButton
+												align={header.column.columnDef.meta?.align}
+												sorted={header.column.getIsSorted()}
+												onClick={() =>
+													header.column.toggleSorting(
+														header.column.getIsSorted() === "asc",
+													)
 												}
-											: undefined
-									}
+											>
+												<table.FlexRender header={header} />
+											</SortButton>
+										) : (
+											<table.FlexRender header={header} />
+										)}
+									</TableHead>
+								))}
+							</TableRow>
+						))}
+					</TableHeader>
+					<TableBody>
+						{loading && rows.length === 0
+							? Array.from({ length: 5 }, (_, index) => (
+									<TableRow key={`skeleton-${index}`}>
+										{Array.from(
+											{ length: visibleCount },
+											(_, cell) => (
+												<TableCell key={cell}>
+													<Skeleton className="h-4 w-full" />
+												</TableCell>
+											),
+										)}
+									</TableRow>
+								))
+							: shown.map((row) => (
+									<TableRow
+										key={row.id}
+										data-state={
+											row.getIsSelected()
+												? "selected"
+												: undefined
+										}
+										role={onRowClick ? "button" : undefined}
+										tabIndex={onRowClick ? 0 : undefined}
+										className={
+											onRowClick
+												? "cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+												: undefined
+										}
+										onClick={
+											onRowClick
+												? () => onRowClick(row.original)
+												: undefined
+										}
+										onKeyDown={
+											onRowClick
+												? (event) => {
+														if (
+															event.key === "Enter" ||
+															event.key === " "
+														) {
+															event.preventDefault();
+															onRowClick(row.original);
+														}
+													}
+												: undefined
+										}
+									>
+										{row.getVisibleCells().map((cell) => (
+											<TableCell
+												key={cell.id}
+												className={alignClass(
+													cell.column.columnDef.meta
+														?.align,
+												)}
+											>
+												<table.FlexRender cell={cell} />
+											</TableCell>
+										))}
+									</TableRow>
+								))}
+						{!loading && shown.length === 0 && (
+							<TableRow>
+								<TableCell
+									colSpan={visibleCount}
+									className="text-muted-foreground py-8 text-center"
 								>
-									{columns.map((column) => (
-										<TableCell
-											key={column.key}
-											className={
-												column.align === "end"
-													? "text-end"
-													: undefined
-											}
-										>
-											{column.cell(row)}
-										</TableCell>
-									))}
-								</TableRow>
-							))}
-					{!loading && rows.length === 0 && (
-						<TableRow>
-							<TableCell
-								colSpan={columns.length}
-								className="text-muted-foreground py-8 text-center"
-							>
-								{empty ?? "Nothing to show yet."}
-							</TableCell>
-						</TableRow>
-					)}
-				</TableBody>
-			</Table>
+									{rows.length > 0
+										? "No rows match this filter."
+										: (empty ?? "Nothing to show yet.")}
+								</TableCell>
+							</TableRow>
+						)}
+					</TableBody>
+				</Table>
+			</div>
 		</div>
 	);
+}
+
+/** SortButton is the guide's sortable header: label plus the current direction. */
+function SortButton({
+	align,
+	sorted,
+	onClick,
+	children,
+}: {
+	align?: "start" | "end";
+	sorted: false | "asc" | "desc";
+	onClick: () => void;
+	children: ReactNode;
+}) {
+	const Icon = sorted === "asc" ? ArrowUp : sorted === "desc" ? ArrowDown : ArrowUpDown;
+	return (
+		<Button
+			variant="ghost"
+			size="sm"
+			onClick={onClick}
+			// Pulled into the cell's padding so the label lines up with the values below.
+			className={cn("h-7 px-2", align === "end" ? "-me-2" : "-ms-2")}
+		>
+			{children}
+			<Icon className={sorted ? undefined : "text-muted-foreground"} />
+		</Button>
+	);
+}
+
+function alignClass(align?: "start" | "end") {
+	return align === "end" ? "text-end" : undefined;
+}
+
+/**
+ * selectColumn is the guide's checkbox column. The header box covers the current page
+ * only, since rows on other pages are not on screen to be checked.
+ */
+export function selectColumn<T extends RowData>(): DataColumn<T> {
+	return {
+		id: "select",
+		enableHiding: false,
+		enableSorting: false,
+		header: ({ table }) => (
+			<Checkbox
+				aria-label="Select all on this page"
+				checked={table.getIsAllPageRowsSelected()}
+				indeterminate={table.getIsSomePageRowsSelected()}
+				onCheckedChange={(value) =>
+					table.toggleAllPageRowsSelected(!!value)
+				}
+			/>
+		),
+		cell: ({ row }) => (
+			<Checkbox
+				aria-label="Select row"
+				checked={row.getIsSelected()}
+				disabled={!row.getCanSelect()}
+				onCheckedChange={(value) => row.toggleSelected(!!value)}
+				// A checkbox inside a clickable row must not also open the row.
+				onClick={(event) => event.stopPropagation()}
+				onKeyDown={(event) => event.stopPropagation()}
+			/>
+		),
+	};
 }

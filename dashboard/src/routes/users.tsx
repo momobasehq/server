@@ -4,9 +4,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AdminPermissions, type AdminUser } from "momobase";
 
-import { DataTable, type Column } from "@/components/data-table";
+import { DataTable, type DataColumn } from "@/components/data-table";
 import { GuardedAction } from "@/components/guarded-action";
 import { PaginationControls } from "@/components/pagination-controls";
+import { rowActionsColumn } from "@/components/row-actions";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -229,72 +230,70 @@ export function Users() {
 		onError: (error: Error) => toast.error(error.message),
 	});
 
-	const columns: Column<AdminUser>[] = [
+	const columns: DataColumn<AdminUser>[] = [
 		{
-			key: "name",
+			id: "name",
+			accessorFn: (r) => r.name,
 			header: "Name",
-			cell: (user) => <span className="font-medium">{user.name}</span>,
-		},
-		{ key: "email", header: "Email", cell: (user) => user.email },
-		{ key: "role", header: "Role", cell: (user) => titleCase(user.role) },
-		{
-			key: "status",
-			header: "Status",
-			cell: (user) => <StatusBadge status={user.status} />,
-		},
-		{
-			key: "created",
-			header: "Created",
-			cell: (user) => formatDateTime(user.created_at),
-		},
-		{
-			key: "actions",
-			header: "",
-			align: "end",
-			cell: (user) => (
-				<div className="flex justify-end gap-2">
-					<GuardedAction
-						permission={AdminPermissions.usersUpdate}
-						variant="outline"
-						size="sm"
-						// Changing your own role is refused by the API — it is both a lockout risk
-						// and a self-promotion path — so the control says so rather than 400ing.
-						disabled={user.id === me?.id}
-						onClick={() => {
-							setReassigning(user);
-							setNextRole(user.role);
-						}}
-					>
-						Change role
-					</GuardedAction>
-					<GuardedAction
-						permission={AdminPermissions.usersUpdate}
-						variant="outline"
-						size="sm"
-						onClick={() => setResetting(user)}
-					>
-						Set password
-					</GuardedAction>
-					<GuardedAction
-						permission={AdminPermissions.usersUpdate}
-						variant="outline"
-						size="sm"
-						disabled={changeStatus.isPending}
-						onClick={() =>
-							changeStatus.mutate({
-								id: user.id,
-								status:
-									user.status === "active"
-										? "inactive"
-										: "active",
-							})
-						}
-					>
-						{user.status === "active" ? "Deactivate" : "Activate"}
-					</GuardedAction>
-				</div>
+			cell: ({ row: { original: user } }) => (
+				<span className="font-medium">{user.name}</span>
 			),
 		},
+		{
+			id: "email",
+			accessorFn: (r) => r.email,
+			header: "Email",
+			cell: ({ row: { original: user } }) => user.email,
+		},
+		{
+			id: "role",
+			accessorFn: (r) => r.role,
+			header: "Role",
+			cell: ({ row: { original: user } }) => titleCase(user.role),
+		},
+		{
+			id: "status",
+			accessorFn: (r) => r.status,
+			header: "Status",
+			cell: ({ row: { original: user } }) => (
+				<StatusBadge status={user.status} />
+			),
+		},
+		{
+			id: "created",
+			accessorFn: (r) => r.created_at,
+			header: "Created",
+			cell: ({ row: { original: user } }) => formatDateTime(user.created_at),
+		},
+		rowActionsColumn<AdminUser>((user) => [
+			{
+				label: "Change role",
+				permission: AdminPermissions.usersUpdate,
+				// Changing your own role is refused by the API — it is both a lockout risk
+				// and a self-promotion path — so the item says so rather than 400ing.
+				disabled: user.id === me?.id,
+				onSelect: () => {
+					setReassigning(user);
+					setNextRole(user.role);
+				},
+			},
+			{
+				label: "Set password",
+				permission: AdminPermissions.usersUpdate,
+				onSelect: () => setResetting(user),
+			},
+			{
+				label: user.status === "active" ? "Deactivate" : "Activate",
+				destructive: user.status === "active",
+				permission: AdminPermissions.usersUpdate,
+				disabled: changeStatus.isPending,
+				onSelect: () =>
+					changeStatus.mutate({
+						id: user.id,
+						status: user.status === "active" ? "inactive" : "active",
+					}),
+			},
+		]),
 	];
 
 	return (
@@ -318,6 +317,7 @@ export function Users() {
 			</CardHeader>
 			<CardContent>
 				<DataTable
+					tableId="users"
 					columns={columns}
 					rows={paged.items}
 					rowKey={(user) => user.id}

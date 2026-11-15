@@ -1,10 +1,10 @@
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 
-import { ColumnToggle, useColumnVisibility } from "@/components/column-toggle";
-import { DataTable, type Column } from "@/components/data-table";
+import { DataTable, type DataColumn } from "@/components/data-table";
 import { PaginationControls } from "@/components/pagination-controls";
+import { rowActionsColumn } from "@/components/row-actions";
 import { StatusBadge } from "@/components/status-badge";
 import { Timestamp } from "@/components/timestamp";
 import {
@@ -61,60 +61,80 @@ function signedAmount(tx: AdminTransaction) {
 	return `${sign}${formatAmount(tx.amount, tx.currency)}`;
 }
 
-const columns: Column<AdminTransaction>[] = [
+const columns: DataColumn<AdminTransaction>[] = [
 	{
-		key: "reference",
+		id: "reference",
+		accessorFn: (r) => r.reference,
 		header: "Reference",
-		required: true,
-		cell: (tx) => <span className="font-medium">{tx.reference}</span>,
+		enableHiding: false,
+		cell: ({ row: { original: tx } }) => (
+			<span className="font-medium">{tx.reference}</span>
+		),
 	},
 	{
-		key: "service",
+		id: "service",
+		accessorFn: (r) => r.service_type,
 		header: "Service",
-		cell: (tx) => <Service type={tx.service_type} />,
+		cell: ({ row: { original: tx } }) => <Service type={tx.service_type} />,
 	},
 	// Payment methods are free-form strings matched against routes, so this column
 	// shows whatever the integrator sent rather than a known set of rails.
 	{
-		key: "method",
+		id: "method",
+		accessorFn: (r) => r.payment_method,
 		header: "Method",
-		cell: (tx) => <code>{tx.payment_method}</code>,
+		cell: ({ row: { original: tx } }) => <code>{tx.payment_method}</code>,
 	},
 	{
-		key: "amount",
+		id: "amount",
+		accessorFn: (r) => r.amount,
 		header: "Amount",
-		align: "end",
-		cell: (tx) => (
+		meta: { align: "end" },
+		cell: ({ row: { original: tx } }) => (
 			<span className="tabular-nums">{signedAmount(tx)}</span>
 		),
 	},
 	{
-		key: "provider_fee",
+		id: "provider_fee",
+		accessorFn: (r) => r.provider_fee,
 		header: "Provider fee",
-		align: "end",
-		cell: (tx) => formatAmount(tx.provider_fee, tx.currency),
+		meta: { align: "end" },
+		cell: ({ row: { original: tx } }) =>
+			formatAmount(tx.provider_fee, tx.currency),
 	},
 	{
-		key: "platform_fee",
+		id: "platform_fee",
+		accessorFn: (r) => r.platform_fee,
 		header: "Platform fee",
-		align: "end",
-		cell: (tx) => formatAmount(tx.platform_fee, tx.currency),
+		meta: { align: "end" },
+		cell: ({ row: { original: tx } }) =>
+			formatAmount(tx.platform_fee, tx.currency),
 	},
 	{
-		key: "account",
+		id: "account",
+		accessorFn: (r) => r.customer_account,
 		header: "Account",
-		cell: (tx) => <code>{tx.customer_account || "—"}</code>,
+		cell: ({ row: { original: tx } }) => (
+			<code>{tx.customer_account || "—"}</code>
+		),
 	},
-	{ key: "country", header: "Country", cell: (tx) => tx.country || "—" },
 	{
-		key: "status",
+		id: "country",
+		accessorFn: (r) => r.country,
+		header: "Country",
+		cell: ({ row: { original: tx } }) => tx.country || "—",
+	},
+	{
+		id: "status",
+		accessorFn: (r) => r.status,
 		header: "Status",
-		cell: (tx) => <StatusBadge status={tx.status} />,
+		cell: ({ row: { original: tx } }) => <StatusBadge status={tx.status} />,
 	},
 	{
-		key: "created",
+		id: "created",
+		accessorFn: (r) => r.created_at,
 		header: "Created",
-		cell: (tx) => <Timestamp value={tx.created_at} />,
+		cell: ({ row: { original: tx } }) => <Timestamp value={tx.created_at} />,
 	},
 ];
 
@@ -128,7 +148,15 @@ export function Transactions() {
 		{ refetchInterval: live && liveInterval },
 	);
 	const [selected, setSelected] = useState<AdminTransaction>();
-	const visibility = useColumnVisibility("transactions");
+	const withActions = useMemo(
+		() => [
+			...columns,
+			rowActionsColumn<AdminTransaction>((tx) => [
+				{ label: "View details", onSelect: () => setSelected(tx) },
+			]),
+		],
+		[],
+	);
 
 	return (
 		<Card>
@@ -137,31 +165,24 @@ export function Transactions() {
 				<CardDescription>
 					Collections and disbursements across every app.
 				</CardDescription>
-				<CardAction className="flex items-center gap-4">
-					<div className="flex items-center gap-2">
-						<Switch
-							id="transactions-live"
-							checked={live}
-							onCheckedChange={setLive}
-						/>
-						<Label htmlFor="transactions-live">Live</Label>
-					</div>
-					<ColumnToggle
-						columns={columns}
-						hidden={visibility.hidden}
-						onToggle={visibility.toggle}
+				<CardAction className="flex items-center gap-2">
+					<Switch
+						id="transactions-live"
+						checked={live}
+						onCheckedChange={setLive}
 					/>
+					<Label htmlFor="transactions-live">Live</Label>
 				</CardAction>
 			</CardHeader>
 			<CardContent>
 				<DataTable
-					columns={columns}
 					rows={paged.items}
 					rowKey={(tx) => tx.id}
 					loading={paged.loading}
 					empty="No payments have been created yet."
 					onRowClick={setSelected}
-					hidden={visibility.hidden}
+					tableId="transactions"
+					columns={withActions}
 				/>
 				<PaginationControls
 					page={paged.page}

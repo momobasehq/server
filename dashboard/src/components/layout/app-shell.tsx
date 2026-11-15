@@ -1,6 +1,7 @@
 import { ChevronsUpDown, LogOut } from "lucide-react";
 import { NavLink, Outlet, useLocation } from "react-router";
 
+import { CommandPalette } from "@/components/command-palette";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -172,7 +173,8 @@ export function AppShell() {
 					<h1 className="font-medium">
 						{titles[segment] ?? "Dashboard"}
 					</h1>
-					<div className="ms-auto">
+					<div className="ms-auto flex items-center gap-2">
+						<CommandPalette />
 						<ThemeToggle />
 					</div>
 				</header>

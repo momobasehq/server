@@ -9,7 +9,8 @@ import {
 	type Role,
 } from "momobase";
 
-import { DataTable, type Column } from "@/components/data-table";
+import { DataTable, type DataColumn } from "@/components/data-table";
+import { rowActionsColumn } from "@/components/row-actions";
 import { GuardedAction } from "@/components/guarded-action";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -252,11 +253,12 @@ export function Roles() {
 		onError: (error: Error) => toast.error(error.message),
 	});
 
-	const columns: Column<Role>[] = [
+	const columns: DataColumn<Role>[] = [
 		{
-			key: "name",
+			id: "name",
+			accessorFn: (r) => r.name,
 			header: "Role",
-			cell: (role) => (
+			cell: ({ row: { original: role } }) => (
 				<span className="flex items-center gap-2 font-medium">
 					{titleCase(role.name)}
 					{/* System roles are seeded and re-synchronised on every start, which is how a
@@ -272,14 +274,16 @@ export function Roles() {
 			),
 		},
 		{
-			key: "description",
+			id: "description",
+			accessorFn: (r) => r.description,
 			header: "Description",
-			cell: (role) => role.description || "—",
+			cell: ({ row: { original: role } }) => role.description || "—",
 		},
 		{
-			key: "permissions",
+			id: "permissions",
+			accessorFn: (r) => r.permissions.length,
 			header: "Permissions",
-			cell: (role) =>
+			cell: ({ row: { original: role } }) =>
 				role.permissions.some(
 					(permission) => permission.code === PermissionWildcard,
 				) ? (
@@ -288,33 +292,21 @@ export function Roles() {
 					<span>{role.permissions.length}</span>
 				),
 		},
-		{
-			key: "actions",
-			header: "",
-			align: "end",
-			cell: (role) => (
-				<div className="flex justify-end gap-2">
-					<GuardedAction
-						permission={AdminPermissions.rolesUpdate}
-						variant="outline"
-						size="sm"
-						disabled={role.system}
-						onClick={() => setEditing(role)}
-					>
-						Edit
-					</GuardedAction>
-					<GuardedAction
-						permission={AdminPermissions.rolesDelete}
-						variant="destructive"
-						size="sm"
-						disabled={role.system || remove.isPending}
-						onClick={() => remove.mutate(role.name)}
-					>
-						Delete
-					</GuardedAction>
-				</div>
-			),
-		},
+		rowActionsColumn<Role>((role) => [
+			{
+				label: "Edit",
+				permission: AdminPermissions.rolesUpdate,
+				disabled: role.system,
+				onSelect: () => setEditing(role),
+			},
+			{
+				label: "Delete",
+				destructive: true,
+				permission: AdminPermissions.rolesDelete,
+				disabled: role.system || remove.isPending,
+				onSelect: () => remove.mutate(role.name),
+			},
+		]),
 	];
 
 	return (
@@ -338,6 +330,7 @@ export function Roles() {
 			</CardHeader>
 			<CardContent>
 				<DataTable
+					tableId="roles"
 					columns={columns}
 					rows={roles.data?.items ?? []}
 					rowKey={(role) => role.id}

@@ -6,10 +6,15 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
+import type { RowSelectionState } from "@tanstack/react-table";
 import { ArrowLeft, Copy, Plus, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
-import { DataTable, type Column } from "@/components/data-table";
+import {
+	DataTable,
+	selectColumn,
+	type DataColumn,
+} from "@/components/data-table";
 import { ChargeFields, zeroCharges } from "@/components/charge-fields";
 import { CurrencySelect } from "@/components/country-select";
 import { ServiceMixChart } from "@/components/analytics-charts";
@@ -22,6 +27,7 @@ import {
 import { AppTester } from "@/components/app-tester";
 import { GuardedAction } from "@/components/guarded-action";
 import { PaginationControls } from "@/components/pagination-controls";
+import { rowActionsColumn } from "@/components/row-actions";
 import { StatusBadge } from "@/components/status-badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -250,63 +256,98 @@ export function AppDetail() {
 		onError: (error: Error) => toast.error(error.message),
 	});
 
-	const columns: Column<AppCredential>[] = [
+	const [selected, setSelected] = useState<RowSelectionState>({});
+	const [confirmingBulk, setConfirmingBulk] = useState(false);
+	// Only what is on screen and still active counts, so a stale selection from another
+	// page or an already-revoked row is never acted on.
+	const revocable = paged.items.filter(
+		(credential) =>
+			credential.status === "active" && selected[credential.id],
+	);
+
+	// One at a time, stopping at the first failure: the admin rate limiter is per
+	// address, and a burst of parallel calls would trip it for every dashboard user.
+	const revokeMany = useMutation({
+		mutationFn: async (ids: string[]) => {
+			let done = 0;
+			try {
+				for (const id of ids) {
+					await client.apps.revokeCredential(appId, id);
+					done++;
+				}
+			} finally {
+				if (done > 0 && done < ids.length)
+					toast.warning(
+						`Revoked ${done} of ${ids.length} credentials before an error.`,
+					);
+				setSelected({});
+				setConfirmingBulk(false);
+				await refreshCredentials();
+			}
+			return done;
+		},
+		onSuccess: (done) =>
+			toast.success(
+				`Revoked ${done} credential${done === 1 ? "" : "s"}`,
+			),
+	});
+
+	// Selection exists only for those who may revoke; for others there is no bulk action.
+	const canRevoke = can(AdminPermissions.credentialsUpdate);
+	const columns: DataColumn<AppCredential>[] = [
+		...(canRevoke ? [selectColumn<AppCredential>()] : []),
 		{
-			key: "name",
+			id: "name",
+			accessorFn: (r) => r.name,
 			header: "Name",
-			cell: (credential) => credential.name || "—",
+			cell: ({ row: { original: credential } }) => credential.name || "—",
 		},
 		{
-			key: "client_id",
+			id: "client_id",
+			accessorFn: (r) => r.client_id,
 			header: "Client ID",
-			cell: (credential) => <code>{credential.client_id}</code>,
-		},
-		{
-			key: "scopes",
-			header: "Scopes",
-			cell: (credential) => <code>{credential.scopes || "—"}</code>,
-		},
-		{
-			key: "status",
-			header: "Status",
-			cell: (credential) => <StatusBadge status={credential.status} />,
-		},
-		{
-			key: "used",
-			header: "Last used",
-			cell: (credential) => formatDateTime(credential.last_used_at),
-		},
-		{
-			key: "actions",
-			header: "",
-			align: "end",
-			cell: (credential) => (
-				<div className="flex justify-end gap-2">
-					<GuardedAction
-						permission={AdminPermissions.credentialsUpdate}
-						variant="outline"
-						size="sm"
-						disabled={
-							rotate.isPending || credential.status !== "active"
-						}
-						onClick={() => rotate.mutate(credential.id)}
-					>
-						Rotate
-					</GuardedAction>
-					<GuardedAction
-						permission={AdminPermissions.credentialsUpdate}
-						variant="destructive"
-						size="sm"
-						disabled={
-							revoke.isPending || credential.status !== "active"
-						}
-						onClick={() => revoke.mutate(credential.id)}
-					>
-						Revoke
-					</GuardedAction>
-				</div>
+			cell: ({ row: { original: credential } }) => (
+				<code>{credential.client_id}</code>
 			),
 		},
+		{
+			id: "scopes",
+			accessorFn: (r) => r.scopes,
+			header: "Scopes",
+			cell: ({ row: { original: credential } }) => (
+				<code>{credential.scopes || "—"}</code>
+			),
+		},
+		{
+			id: "status",
+			accessorFn: (r) => r.status,
+			header: "Status",
+			cell: ({ row: { original: credential } }) => (
+				<StatusBadge status={credential.status} />
+			),
+		},
+		{
+			id: "used",
+			accessorFn: (r) => r.last_used_at,
+			header: "Last used",
+			cell: ({ row: { original: credential } }) =>
+				formatDateTime(credential.last_used_at),
+		},
+		rowActionsColumn<AppCredential>((credential) => [
+			{
+				label: "Rotate secret",
+				permission: AdminPermissions.credentialsUpdate,
+				disabled: rotate.isPending || credential.status !== "active",
+				onSelect: () => rotate.mutate(credential.id),
+			},
+			{
+				label: "Revoke",
+				destructive: true,
+				permission: AdminPermissions.credentialsUpdate,
+				disabled: revoke.isPending || credential.status !== "active",
+				onSelect: () => revoke.mutate(credential.id),
+			},
+		]),
 	];
 
 	return (
@@ -466,7 +507,21 @@ export function AppDetail() {
 									Client credentials this app uses to obtain
 									access tokens.
 								</CardDescription>
-								<CardAction>
+								<CardAction className="flex gap-2">
+									{revocable.length > 0 && (
+										<GuardedAction
+											permission={
+												AdminPermissions.credentialsUpdate
+											}
+											variant="destructive"
+											size="sm"
+											onClick={() =>
+												setConfirmingBulk(true)
+											}
+										>
+											Revoke {revocable.length}
+										</GuardedAction>
+									)}
 									<GuardedAction
 										permission={
 											AdminPermissions.credentialsCreate
@@ -481,11 +536,17 @@ export function AppDetail() {
 							</CardHeader>
 							<CardContent>
 								<DataTable
+									tableId="credentials"
 									columns={columns}
 									rows={paged.items}
 									rowKey={(credential) => credential.id}
 									loading={paged.loading}
 									empty="This app has no credentials yet."
+									rowSelection={selected}
+									onRowSelectionChange={setSelected}
+									canSelect={(credential) =>
+										credential.status === "active"
+									}
 								/>
 								<PaginationControls
 									page={paged.page}
@@ -514,6 +575,53 @@ export function AppDetail() {
 					)}
 				</TabsContent>
 			</Tabs>
+
+			<Dialog
+				open={confirmingBulk}
+				onOpenChange={(open) =>
+					!revokeMany.isPending && setConfirmingBulk(open)
+				}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>
+							Revoke {revocable.length} credential
+							{revocable.length === 1 ? "" : "s"}?
+						</DialogTitle>
+						<DialogDescription>
+							Anything signing in with these stops working at once.
+							This cannot be undone.
+						</DialogDescription>
+					</DialogHeader>
+					<ul className="text-muted-foreground list-inside list-disc">
+						{revocable.map((credential) => (
+							<li key={credential.id}>
+								{credential.name || credential.client_id}
+							</li>
+						))}
+					</ul>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => setConfirmingBulk(false)}
+							disabled={revokeMany.isPending}
+						>
+							Cancel
+						</Button>
+						<Button
+							variant="destructive"
+							onClick={() =>
+								revokeMany.mutate(
+									revocable.map((credential) => credential.id),
+								)
+							}
+							disabled={revokeMany.isPending}
+						>
+							{revokeMany.isPending ? "Revoking…" : "Revoke"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 
 			<Dialog open={naming} onOpenChange={setNaming}>
 				<DialogContent>

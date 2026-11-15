@@ -10,9 +10,10 @@ import {
 	type ServiceType,
 } from "momobase";
 
-import { DataTable, type Column } from "@/components/data-table";
+import { DataTable, type DataColumn } from "@/components/data-table";
 import { GuardedAction } from "@/components/guarded-action";
 import { PaginationControls } from "@/components/pagination-controls";
+import { rowActionsColumn } from "@/components/row-actions";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -259,23 +260,26 @@ export function PaymentRoutes() {
 		onError: (error: Error) => toast.error(error.message),
 	});
 
-	const columns: Column<PaymentRoute>[] = [
+	const columns: DataColumn<PaymentRoute>[] = [
 		{
-			key: "service",
+			id: "service",
+			accessorFn: (r) => r.service_type,
 			header: "Service",
-			cell: (route) => titleCase(route.service_type),
+			cell: ({ row: { original: route } }) => titleCase(route.service_type),
 		},
 		{
-			key: "method",
+			id: "method",
+			accessorFn: (r) => r.payment_method,
 			header: "Method",
-			cell: (route) => (
+			cell: ({ row: { original: route } }) => (
 				<code className="font-medium">{route.payment_method}</code>
 			),
 		},
 		{
-			key: "account",
+			id: "account",
+			accessorFn: (r) => r.provider_name || r.provider_account_id,
 			header: "Provider account",
-			cell: (route) => (
+			cell: ({ row: { original: route } }) => (
 				<Link
 					className="font-medium underline-offset-4 hover:underline"
 					to={`/providers/${route.provider_account_id}`}
@@ -285,40 +289,33 @@ export function PaymentRoutes() {
 			),
 		},
 		{
-			key: "priority",
+			id: "priority",
+			accessorFn: (r) => r.priority,
 			header: "Priority",
-			align: "end",
-			cell: (route) => route.priority,
+			meta: { align: "end" },
+			cell: ({ row: { original: route } }) => route.priority,
 		},
 		{
-			key: "active",
+			id: "active",
+			accessorFn: (r) => (r.active ? "active" : "inactive"),
 			header: "Status",
-			cell: (route) => (
+			cell: ({ row: { original: route } }) => (
 				<StatusBadge status={route.active ? "active" : "inactive"} />
 			),
 		},
-		{
-			key: "actions",
-			header: "",
-			align: "end",
-			cell: (route) => (
-				<GuardedAction
-					permission={AdminPermissions.routesUpdate}
-					variant="outline"
-					size="sm"
-					disabled={update.isPending}
-					onClick={() =>
-						update.mutate({
-							id: route.id,
-							priority: route.priority,
-							active: !route.active,
-						})
-					}
-				>
-					{route.active ? "Disable" : "Enable"}
-				</GuardedAction>
-			),
-		},
+		rowActionsColumn<PaymentRoute>((route) => [
+			{
+				label: route.active ? "Disable" : "Enable",
+				permission: AdminPermissions.routesUpdate,
+				disabled: update.isPending,
+				onSelect: () =>
+					update.mutate({
+						id: route.id,
+						priority: route.priority,
+						active: !route.active,
+					}),
+			},
+		]),
 	];
 
 	return (
@@ -342,6 +339,7 @@ export function PaymentRoutes() {
 			</CardHeader>
 			<CardContent>
 				<DataTable
+					tableId="routes"
 					columns={columns}
 					rows={paged.items}
 					rowKey={(route) => route.id}

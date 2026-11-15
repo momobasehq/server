@@ -1,4 +1,4 @@
-import { DataTable, type Column } from "@/components/data-table";
+import { DataTable, type DataColumn } from "@/components/data-table";
 import { PaginationControls } from "@/components/pagination-controls";
 import { ActionBadge } from "@/components/status-badge";
 import {
@@ -32,35 +32,40 @@ function Party({ type, id }: { type: string; id?: string }) {
 	);
 }
 
-const columns: Column<AuditLog>[] = [
+const columns: DataColumn<AuditLog>[] = [
 	{
-		key: "action",
+		id: "action",
+		accessorFn: (r) => r.action,
 		header: "Action",
-		cell: (log) => <ActionBadge action={log.action} />,
+		cell: ({ row: { original: log } }) => <ActionBadge action={log.action} />,
 	},
 	{
-		key: "entity",
+		id: "entity",
+		accessorFn: (r) => `${r.entity_type ?? ""} ${r.entity_id ?? ""}`,
 		header: "Entity",
-		cell: (log) => (
+		cell: ({ row: { original: log } }) => (
 			<Party type={log.entity_type || "—"} id={log.entity_id} />
 		),
 	},
 	{
-		key: "actor",
+		id: "actor",
+		accessorFn: (r) => `${r.actor_type || "system"} ${r.actor_id ?? ""}`,
 		header: "Actor",
-		cell: (log) => (
+		cell: ({ row: { original: log } }) => (
 			<Party type={log.actor_type || "system"} id={log.actor_id} />
 		),
 	},
 	{
-		key: "ip",
+		id: "ip",
+		accessorFn: (r) => r.ip_address,
 		header: "IP",
-		cell: (log) => <code>{log.ip_address || "—"}</code>,
+		cell: ({ row: { original: log } }) => <code>{log.ip_address || "—"}</code>,
 	},
 	{
-		key: "at",
+		id: "at",
+		accessorFn: (r) => r.created_at,
 		header: "When",
-		cell: (log) => formatDateTime(log.created_at),
+		cell: ({ row: { original: log } }) => formatDateTime(log.created_at),
 	},
 ];
 
@@ -81,6 +86,7 @@ export function Audit() {
 			</CardHeader>
 			<CardContent>
 				<DataTable
+					tableId="audit"
 					columns={columns}
 					rows={paged.items}
 					rowKey={(log) => log.id}

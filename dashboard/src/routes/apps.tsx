@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, Plus } from "lucide-react";
-import { Link } from "react-router";
+import { Plus } from "lucide-react";
+import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
 import { AdminPermissions, type App, type ChargeSchedule } from "momobase";
 
-import { DataTable, type Column } from "@/components/data-table";
+import { DataTable, type DataColumn } from "@/components/data-table";
 import { ChargeFields, zeroCharges } from "@/components/charge-fields";
 import { CurrencyFlag, CurrencySelect } from "@/components/country-select";
 import { GuardedAction } from "@/components/guarded-action";
 import { PaginationControls } from "@/components/pagination-controls";
+import { rowActionsColumn } from "@/components/row-actions";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -188,19 +189,21 @@ function CreateAppDialog({
 
 /** Apps lists integrating applications and links to their credentials. */
 export function Apps() {
+	const navigate = useNavigate();
 	const { client } = useAuth();
 	const paged = usePagedQuery(keys.apps.list, (page) =>
 		client.apps.list(page),
 	);
 	const [creating, setCreating] = useState(false);
 
-	const columns: Column<App>[] = [
+	const columns: DataColumn<App>[] = [
 		{
-			key: "name",
+			id: "name",
+			accessorFn: (r) => r.name,
 			header: "Name",
 			// Underlined unconditionally: with hover-only underline this read as plain text,
 			// so the detail page — and every credential on it — looked like it did not exist.
-			cell: (app) => (
+			cell: ({ row: { original: app } }) => (
 				<Link
 					to={`/apps/${app.id}`}
 					className="font-medium underline underline-offset-4"
@@ -210,14 +213,18 @@ export function Apps() {
 			),
 		},
 		{
-			key: "environment",
+			id: "environment",
+			accessorFn: (r) => r.environment,
 			header: "Environment",
-			cell: (app) => <StatusBadge status={app.environment} />,
+			cell: ({ row: { original: app } }) => (
+				<StatusBadge status={app.environment} />
+			),
 		},
 		{
-			key: "currency",
+			id: "currency",
+			accessorFn: (r) => r.currency,
 			header: "Currency",
-			cell: (app) => (
+			cell: ({ row: { original: app } }) => (
 				<span className="flex items-center gap-2">
 					<CurrencyFlag code={app.currency} />
 					{app.currency}
@@ -225,37 +232,28 @@ export function Apps() {
 			),
 		},
 		{
-			key: "status",
+			id: "status",
+			accessorFn: (r) => r.status,
 			header: "Status",
-			cell: (app) => <StatusBadge status={app.status} />,
+			cell: ({ row: { original: app } }) => <StatusBadge status={app.status} />,
 		},
 		{
-			key: "description",
+			id: "description",
+			accessorFn: (r) => r.description,
 			header: "Description",
-			cell: (app) => app.description || "—",
+			cell: ({ row: { original: app } }) => app.description || "—",
 		},
 		{
-			key: "created",
+			id: "created",
+			accessorFn: (r) => r.created_at,
 			header: "Created",
-			cell: (app) => formatDateTime(app.created_at),
+			cell: ({ row: { original: app } }) => formatDateTime(app.created_at),
 		},
-		{
-			key: "actions",
-			header: "",
-			align: "end",
-			// Status, credentials, and the tester all live on the detail page, so the list
-			// offers one unambiguous way in rather than a partial set of actions.
-			cell: (app) => (
-				<Button
-					variant="outline"
-					size="sm"
-					render={<Link to={`/apps/${app.id}`} />}
-				>
-					Manage
-					<ChevronRight />
-				</Button>
-			),
-		},
+		// Status, credentials, and the tester all live on the detail page, so the menu
+		// offers one unambiguous way in rather than a partial set of actions.
+		rowActionsColumn<App>((app) => [
+			{ label: "Manage", onSelect: () => void navigate(`/apps/${app.id}`) },
+		]),
 	];
 
 	return (
@@ -278,6 +276,7 @@ export function Apps() {
 			</CardHeader>
 			<CardContent>
 				<DataTable
+					tableId="apps"
 					columns={columns}
 					rows={paged.items}
 					rowKey={(app) => app.id}
