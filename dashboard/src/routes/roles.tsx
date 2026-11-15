@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Lock } from "lucide-react";
+import { Lock, Plus } from "lucide-react";
 import { toast } from "sonner";
 import {
 	AdminPermissions,
@@ -331,6 +331,7 @@ export function Roles() {
 						size="sm"
 						onClick={() => setCreating(true)}
 					>
+						<Plus />
 						New role
 					</GuardedAction>
 				</CardAction>

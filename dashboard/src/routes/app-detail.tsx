@@ -6,7 +6,7 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
-import { ArrowLeft, Copy, TriangleAlert } from "lucide-react";
+import { ArrowLeft, Copy, Plus, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
 import { DataTable, type Column } from "@/components/data-table";
@@ -474,6 +474,7 @@ export function AppDetail() {
 										size="sm"
 										onClick={() => setNaming(true)}
 									>
+										<Plus />
 										New credential
 									</GuardedAction>
 								</CardAction>

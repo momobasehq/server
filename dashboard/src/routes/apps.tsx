@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 import { AdminPermissions, type App, type ChargeSchedule } from "momobase";
@@ -271,6 +271,7 @@ export function Apps() {
 						size="sm"
 						onClick={() => setCreating(true)}
 					>
+						<Plus />
 						New app
 					</GuardedAction>
 				</CardAction>

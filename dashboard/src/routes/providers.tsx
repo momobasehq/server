@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { toast } from "sonner";
@@ -619,6 +620,7 @@ export function Providers() {
 							size="sm"
 							onClick={() => setCreating(true)}
 						>
+							<Plus />
 							New account
 						</GuardedAction>
 					</CardAction>
