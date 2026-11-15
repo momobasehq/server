@@ -64,7 +64,7 @@ const base = {
 
 /**
  * The shadcn data-table guide's feature set. Lists are paged on the server, so search
- * and sorting act on the loaded page only, which the search placeholder says.
+ * and sorting act on the loaded page only, hence "Filter rows" rather than "Search".
  */
 export const features = tableFeatures({
 	...base,
@@ -156,8 +156,8 @@ export function DataTable<T extends RowData>({
 		<div className="flex flex-col gap-2">
 			<div className="flex flex-wrap items-center gap-2">
 				<Input
-					placeholder="Search this page…"
-					aria-label="Search this page"
+					placeholder="Filter rows…"
+					aria-label="Filter rows"
 					value={globalFilter}
 					onChange={(event) => setGlobalFilter(event.target.value)}
 					className="h-7 max-w-xs"
@@ -266,7 +266,7 @@ export function DataTable<T extends RowData>({
 									className="text-muted-foreground py-8 text-center"
 								>
 									{rows.length > 0
-										? "No results on this page."
+										? "No rows match this filter."
 										: (empty ?? "Nothing to show yet.")}
 								</TableCell>
 							</TableRow>
