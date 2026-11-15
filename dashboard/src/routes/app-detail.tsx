@@ -389,7 +389,7 @@ export function AppDetail() {
 						</GuardedAction>
 					</CardAction>
 				</CardHeader>
-				<CardContent className="flex flex-wrap items-end gap-6">
+				<CardContent className="flex-row flex-wrap items-end gap-6">
 					<div>
 						<p className="text-muted-foreground">Environment</p>
 						<StatusBadge status={app.data?.environment} />
