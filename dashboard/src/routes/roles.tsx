@@ -9,7 +9,7 @@ import {
 	type Role,
 } from "momobase";
 
-import { DataTable, type Column } from "@/components/data-table";
+import { DataTable, type DataColumn } from "@/components/data-table";
 import { GuardedAction } from "@/components/guarded-action";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -252,11 +252,11 @@ export function Roles() {
 		onError: (error: Error) => toast.error(error.message),
 	});
 
-	const columns: Column<Role>[] = [
+	const columns: DataColumn<Role>[] = [
 		{
-			key: "name",
+			id: "name",
 			header: "Role",
-			cell: (role) => (
+			cell: ({ row: { original: role } }) => (
 				<span className="flex items-center gap-2 font-medium">
 					{titleCase(role.name)}
 					{/* System roles are seeded and re-synchronised on every start, which is how a
@@ -272,14 +272,14 @@ export function Roles() {
 			),
 		},
 		{
-			key: "description",
+			id: "description",
 			header: "Description",
-			cell: (role) => role.description || "—",
+			cell: ({ row: { original: role } }) => role.description || "—",
 		},
 		{
-			key: "permissions",
+			id: "permissions",
 			header: "Permissions",
-			cell: (role) =>
+			cell: ({ row: { original: role } }) =>
 				role.permissions.some(
 					(permission) => permission.code === PermissionWildcard,
 				) ? (
@@ -289,10 +289,10 @@ export function Roles() {
 				),
 		},
 		{
-			key: "actions",
+			id: "actions",
 			header: "",
-			align: "end",
-			cell: (role) => (
+			meta: { align: "end" },
+			cell: ({ row: { original: role } }) => (
 				<div className="flex justify-end gap-2">
 					<GuardedAction
 						permission={AdminPermissions.rolesUpdate}

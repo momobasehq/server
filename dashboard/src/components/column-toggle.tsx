@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { Columns3 } from "lucide-react";
+import type {
+	ColumnVisibilityState,
+	OnChangeFn,
+	RowData,
+} from "@tanstack/react-table";
 
-import type { Column } from "@/components/data-table";
+import type { DataTableInstance } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -12,57 +17,49 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-function readHidden(storageKey: string, fallback: string[]) {
+function readVisibility(storageKey: string): ColumnVisibilityState {
 	try {
 		const stored = localStorage.getItem(storageKey);
-		if (stored) return new Set<string>(JSON.parse(stored));
+		if (stored) return JSON.parse(stored) as ColumnVisibilityState;
 	} catch {
-		// Blocked or corrupt storage just means the defaults.
+		// Blocked or corrupt storage just means every column shows.
 	}
-	return new Set(fallback);
+	return {};
 }
 
 /**
- * useColumnVisibility tracks which columns a table hides. The choice is a per-viewer
+ * useColumnVisibility holds a table's column visibility. The choice is a per-viewer
  * convenience, so it lives in localStorage and a failed write is simply not remembered.
  */
-export function useColumnVisibility(
-	storageKey: string,
-	defaultHidden: string[] = [],
-) {
+export function useColumnVisibility(storageKey: string) {
 	const key = `momobase:columns:${storageKey}`;
-	const [hidden, setHidden] = useState(() => readHidden(key, defaultHidden));
+	const [columnVisibility, setVisibility] = useState(() =>
+		readVisibility(key),
+	);
 
-	const toggle = (columnKey: string, visible: boolean) => {
-		const next = new Set(hidden);
-		if (visible) next.delete(columnKey);
-		else next.add(columnKey);
-		setHidden(next);
+	const onColumnVisibilityChange: OnChangeFn<ColumnVisibilityState> = (
+		updater,
+	) => {
+		const next =
+			typeof updater === "function" ? updater(columnVisibility) : updater;
+		setVisibility(next);
 		try {
-			localStorage.setItem(key, JSON.stringify([...next]));
+			localStorage.setItem(key, JSON.stringify(next));
 		} catch {
 			// Not persisted; the toggle still applies for this visit.
 		}
 	};
 
-	return { hidden, toggle };
+	return { columnVisibility, onColumnVisibilityChange };
 }
 
-/** ColumnToggle is the menu that shows or hides a table's optional columns. */
-export function ColumnToggle<T>({
-	columns,
-	hidden,
-	onToggle,
-}: {
-	columns: Column<T>[];
-	hidden: ReadonlySet<string>;
-	onToggle: (key: string, visible: boolean) => void;
-}) {
+/** ColumnToggle is the guide's menu for showing or hiding a table's columns. */
+export function ColumnToggle<T extends RowData>({ table }: { table: DataTableInstance<T> }) {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger
 				render={
-					<Button variant="outline" size="sm">
+					<Button variant="outline" size="sm" className="ms-auto">
 						<Columns3 />
 						Columns
 					</Button>
@@ -71,17 +68,20 @@ export function ColumnToggle<T>({
 			<DropdownMenuContent align="end" className="w-44">
 				<DropdownMenuGroup>
 					<DropdownMenuLabel>Show columns</DropdownMenuLabel>
-					{columns
-						.filter((column) => !column.required)
+					{table
+						.getAllColumns()
+						.filter((column) => column.getCanHide())
 						.map((column) => (
 							<DropdownMenuCheckboxItem
-								key={column.key}
-								checked={!hidden.has(column.key)}
-								onCheckedChange={(checked) =>
-									onToggle(column.key, checked)
+								key={column.id}
+								checked={column.getIsVisible()}
+								onCheckedChange={(value) =>
+									column.toggleVisibility(!!value)
 								}
 							>
-								{column.header}
+								{typeof column.columnDef.header === "string"
+									? column.columnDef.header
+									: column.id}
 							</DropdownMenuCheckboxItem>
 						))}
 				</DropdownMenuGroup>

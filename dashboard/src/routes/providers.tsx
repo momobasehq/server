@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { toast } from "sonner";
 
-import { DataTable, type Column } from "@/components/data-table";
+import { DataTable, type DataColumn } from "@/components/data-table";
 import { ChargeFields, zeroCharges } from "@/components/charge-fields";
 import {
 	CountrySelect,
@@ -508,11 +508,11 @@ export function Providers() {
 		onError: (error: Error) => toast.error(error.message),
 	});
 
-	const columns: Column<ProviderAccount>[] = [
+	const columns: DataColumn<ProviderAccount>[] = [
 		{
-			key: "name",
+			id: "name",
 			header: "Name",
-			cell: (account) => (
+			cell: ({ row: { original: account } }) => (
 				<Link
 					className="font-medium underline-offset-4 hover:underline"
 					to={`/providers/${account.id}`}
@@ -522,19 +522,23 @@ export function Providers() {
 			),
 		},
 		{
-			key: "code",
+			id: "code",
 			header: "Provider",
-			cell: (account) => <code>{account.provider_code}</code>,
+			cell: ({ row: { original: account } }) => (
+				<code>{account.provider_code}</code>
+			),
 		},
 		{
-			key: "environment",
+			id: "environment",
 			header: "Environment",
-			cell: (account) => <StatusBadge status={account.environment} />,
+			cell: ({ row: { original: account } }) => (
+				<StatusBadge status={account.environment} />
+			),
 		},
 		{
-			key: "country",
+			id: "country",
 			header: "Country",
-			cell: (account) => (
+			cell: ({ row: { original: account } }) => (
 				<span className="flex items-center gap-2">
 					<Flag code={account.country} />
 					{account.country}
@@ -542,32 +546,33 @@ export function Providers() {
 			),
 		},
 		{
-			key: "currency",
+			id: "currency",
 			header: "Currency",
-			cell: (account) => account.currency,
+			cell: ({ row: { original: account } }) => account.currency,
 		},
 		{
-			key: "active",
+			id: "active",
 			header: "Status",
-			cell: (account) => (
+			cell: ({ row: { original: account } }) => (
 				<StatusBadge status={account.active ? "active" : "inactive"} />
 			),
 		},
 		{
-			key: "version",
+			id: "version",
 			header: "Config",
-			cell: (account) => `v${account.config_version}`,
+			cell: ({ row: { original: account } }) => `v${account.config_version}`,
 		},
 		{
-			key: "updated",
+			id: "updated",
 			header: "Updated",
-			cell: (account) => formatDateTime(account.updated_at),
+			cell: ({ row: { original: account } }) =>
+				formatDateTime(account.updated_at),
 		},
 		{
-			key: "actions",
+			id: "actions",
 			header: "",
-			align: "end",
-			cell: (account) => (
+			meta: { align: "end" },
+			cell: ({ row: { original: account } }) => (
 				<div className="flex justify-end gap-2">
 					<GuardedAction
 						permission={AdminPermissions.providersTest}
@@ -657,9 +662,9 @@ export function Providers() {
 						<DataTable
 							columns={[
 								{
-									key: "provider",
+									id: "provider",
 									header: "Provider",
-									cell: (row) => (
+									cell: ({ row: { original: row } }) => (
 										<code>
 											{row.provider_code ??
 												row.provider_account_id}
@@ -667,22 +672,22 @@ export function Providers() {
 									),
 								},
 								{
-									key: "country",
+									id: "country",
 									header: "Country",
-									cell: (row) => row.country,
+									cell: ({ row: { original: row } }) => row.country,
 								},
 								{
-									key: "status",
+									id: "status",
 									header: "Status",
-									cell: (row) => (
+									cell: ({ row: { original: row } }) => (
 										<StatusBadge status={row.status} />
 									),
 								},
 								{
-									key: "available",
+									id: "available",
 									header: "Available",
-									align: "end",
-									cell: (row) =>
+									meta: { align: "end" },
+									cell: ({ row: { original: row } }) =>
 										row.balance
 											? formatAmount(
 													row.balance.available,
@@ -691,10 +696,10 @@ export function Providers() {
 											: "—",
 								},
 								{
-									key: "ledger",
+									id: "ledger",
 									header: "Ledger",
-									align: "end",
-									cell: (row) =>
+									meta: { align: "end" },
+									cell: ({ row: { original: row } }) =>
 										row.balance
 											? formatAmount(
 													row.balance.ledger,
@@ -703,9 +708,9 @@ export function Providers() {
 											: "—",
 								},
 								{
-									key: "error",
+									id: "error",
 									header: "Error",
-									cell: (row) => row.error ?? "—",
+									cell: ({ row: { original: row } }) => row.error ?? "—",
 								},
 							]}
 							rows={balances.items}

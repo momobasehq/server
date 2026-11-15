@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 
 import { ColumnToggle, useColumnVisibility } from "@/components/column-toggle";
-import { DataTable, type Column } from "@/components/data-table";
+import { DataTable, type DataColumn } from "@/components/data-table";
 import { PaginationControls } from "@/components/pagination-controls";
 import { StatusBadge } from "@/components/status-badge";
 import { Timestamp } from "@/components/timestamp";
@@ -61,60 +61,70 @@ function signedAmount(tx: AdminTransaction) {
 	return `${sign}${formatAmount(tx.amount, tx.currency)}`;
 }
 
-const columns: Column<AdminTransaction>[] = [
+const columns: DataColumn<AdminTransaction>[] = [
 	{
-		key: "reference",
+		id: "reference",
 		header: "Reference",
-		required: true,
-		cell: (tx) => <span className="font-medium">{tx.reference}</span>,
+		enableHiding: false,
+		cell: ({ row: { original: tx } }) => (
+			<span className="font-medium">{tx.reference}</span>
+		),
 	},
 	{
-		key: "service",
+		id: "service",
 		header: "Service",
-		cell: (tx) => <Service type={tx.service_type} />,
+		cell: ({ row: { original: tx } }) => <Service type={tx.service_type} />,
 	},
 	// Payment methods are free-form strings matched against routes, so this column
 	// shows whatever the integrator sent rather than a known set of rails.
 	{
-		key: "method",
+		id: "method",
 		header: "Method",
-		cell: (tx) => <code>{tx.payment_method}</code>,
+		cell: ({ row: { original: tx } }) => <code>{tx.payment_method}</code>,
 	},
 	{
-		key: "amount",
+		id: "amount",
 		header: "Amount",
-		align: "end",
-		cell: (tx) => (
+		meta: { align: "end" },
+		cell: ({ row: { original: tx } }) => (
 			<span className="tabular-nums">{signedAmount(tx)}</span>
 		),
 	},
 	{
-		key: "provider_fee",
+		id: "provider_fee",
 		header: "Provider fee",
-		align: "end",
-		cell: (tx) => formatAmount(tx.provider_fee, tx.currency),
+		meta: { align: "end" },
+		cell: ({ row: { original: tx } }) =>
+			formatAmount(tx.provider_fee, tx.currency),
 	},
 	{
-		key: "platform_fee",
+		id: "platform_fee",
 		header: "Platform fee",
-		align: "end",
-		cell: (tx) => formatAmount(tx.platform_fee, tx.currency),
+		meta: { align: "end" },
+		cell: ({ row: { original: tx } }) =>
+			formatAmount(tx.platform_fee, tx.currency),
 	},
 	{
-		key: "account",
+		id: "account",
 		header: "Account",
-		cell: (tx) => <code>{tx.customer_account || "—"}</code>,
+		cell: ({ row: { original: tx } }) => (
+			<code>{tx.customer_account || "—"}</code>
+		),
 	},
-	{ key: "country", header: "Country", cell: (tx) => tx.country || "—" },
 	{
-		key: "status",
+		id: "country",
+		header: "Country",
+		cell: ({ row: { original: tx } }) => tx.country || "—",
+	},
+	{
+		id: "status",
 		header: "Status",
-		cell: (tx) => <StatusBadge status={tx.status} />,
+		cell: ({ row: { original: tx } }) => <StatusBadge status={tx.status} />,
 	},
 	{
-		key: "created",
+		id: "created",
 		header: "Created",
-		cell: (tx) => <Timestamp value={tx.created_at} />,
+		cell: ({ row: { original: tx } }) => <Timestamp value={tx.created_at} />,
 	},
 ];
 
@@ -137,20 +147,13 @@ export function Transactions() {
 				<CardDescription>
 					Collections and disbursements across every app.
 				</CardDescription>
-				<CardAction className="flex items-center gap-4">
-					<div className="flex items-center gap-2">
-						<Switch
-							id="transactions-live"
-							checked={live}
-							onCheckedChange={setLive}
-						/>
-						<Label htmlFor="transactions-live">Live</Label>
-					</div>
-					<ColumnToggle
-						columns={columns}
-						hidden={visibility.hidden}
-						onToggle={visibility.toggle}
+				<CardAction className="flex items-center gap-2">
+					<Switch
+						id="transactions-live"
+						checked={live}
+						onCheckedChange={setLive}
 					/>
+					<Label htmlFor="transactions-live">Live</Label>
 				</CardAction>
 			</CardHeader>
 			<CardContent>
@@ -161,7 +164,8 @@ export function Transactions() {
 					loading={paged.loading}
 					empty="No payments have been created yet."
 					onRowClick={setSelected}
-					hidden={visibility.hidden}
+					{...visibility}
+					toolbar={(table) => <ColumnToggle table={table} />}
 				/>
 				<PaginationControls
 					page={paged.page}

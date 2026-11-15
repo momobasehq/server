@@ -6,10 +6,15 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
+import type { RowSelectionState } from "@tanstack/react-table";
 import { ArrowLeft, Copy, Plus, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
-import { DataTable, type Column } from "@/components/data-table";
+import {
+	DataTable,
+	selectColumn,
+	type DataColumn,
+} from "@/components/data-table";
 import { ChargeFields, zeroCharges } from "@/components/charge-fields";
 import { CurrencySelect } from "@/components/country-select";
 import { ServiceMixChart } from "@/components/analytics-charts";
@@ -250,13 +255,13 @@ export function AppDetail() {
 		onError: (error: Error) => toast.error(error.message),
 	});
 
-	const [selected, setSelected] = useState<Set<string>>(new Set());
+	const [selected, setSelected] = useState<RowSelectionState>({});
 	const [confirmingBulk, setConfirmingBulk] = useState(false);
 	// Only what is on screen and still active counts, so a stale selection from another
 	// page or an already-revoked row is never acted on.
 	const revocable = paged.items.filter(
 		(credential) =>
-			credential.status === "active" && selected.has(credential.id),
+			credential.status === "active" && selected[credential.id],
 	);
 
 	// One at a time, stopping at the first failure: the admin rate limiter is per
@@ -274,7 +279,7 @@ export function AppDetail() {
 					toast.warning(
 						`Revoked ${done} of ${ids.length} credentials before an error.`,
 					);
-				setSelected(new Set());
+				setSelected({});
 				setConfirmingBulk(false);
 				await refreshCredentials();
 			}
@@ -286,37 +291,47 @@ export function AppDetail() {
 			),
 	});
 
-	const columns: Column<AppCredential>[] = [
+	// Selection exists only for those who may revoke; for others there is no bulk action.
+	const canRevoke = can(AdminPermissions.credentialsUpdate);
+	const columns: DataColumn<AppCredential>[] = [
+		...(canRevoke ? [selectColumn<AppCredential>()] : []),
 		{
-			key: "name",
+			id: "name",
 			header: "Name",
-			cell: (credential) => credential.name || "—",
+			cell: ({ row: { original: credential } }) => credential.name || "—",
 		},
 		{
-			key: "client_id",
+			id: "client_id",
 			header: "Client ID",
-			cell: (credential) => <code>{credential.client_id}</code>,
+			cell: ({ row: { original: credential } }) => (
+				<code>{credential.client_id}</code>
+			),
 		},
 		{
-			key: "scopes",
+			id: "scopes",
 			header: "Scopes",
-			cell: (credential) => <code>{credential.scopes || "—"}</code>,
+			cell: ({ row: { original: credential } }) => (
+				<code>{credential.scopes || "—"}</code>
+			),
 		},
 		{
-			key: "status",
+			id: "status",
 			header: "Status",
-			cell: (credential) => <StatusBadge status={credential.status} />,
+			cell: ({ row: { original: credential } }) => (
+				<StatusBadge status={credential.status} />
+			),
 		},
 		{
-			key: "used",
+			id: "used",
 			header: "Last used",
-			cell: (credential) => formatDateTime(credential.last_used_at),
+			cell: ({ row: { original: credential } }) =>
+				formatDateTime(credential.last_used_at),
 		},
 		{
-			key: "actions",
+			id: "actions",
 			header: "",
-			align: "end",
-			cell: (credential) => (
+			meta: { align: "end" },
+			cell: ({ row: { original: credential } }) => (
 				<div className="flex justify-end gap-2">
 					<GuardedAction
 						permission={AdminPermissions.credentialsUpdate}
@@ -536,16 +551,10 @@ export function AppDetail() {
 									rowKey={(credential) => credential.id}
 									loading={paged.loading}
 									empty="This app has no credentials yet."
-									selection={
-										can(AdminPermissions.credentialsUpdate)
-											? {
-													selected,
-													onChange: setSelected,
-													selectable: (credential) =>
-														credential.status ===
-														"active",
-												}
-											: undefined
+									rowSelection={selected}
+									onRowSelectionChange={setSelected}
+									canSelect={(credential) =>
+										credential.status === "active"
 									}
 								/>
 								<PaginationControls

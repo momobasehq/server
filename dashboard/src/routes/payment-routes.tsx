@@ -10,7 +10,7 @@ import {
 	type ServiceType,
 } from "momobase";
 
-import { DataTable, type Column } from "@/components/data-table";
+import { DataTable, type DataColumn } from "@/components/data-table";
 import { GuardedAction } from "@/components/guarded-action";
 import { PaginationControls } from "@/components/pagination-controls";
 import { StatusBadge } from "@/components/status-badge";
@@ -259,23 +259,23 @@ export function PaymentRoutes() {
 		onError: (error: Error) => toast.error(error.message),
 	});
 
-	const columns: Column<PaymentRoute>[] = [
+	const columns: DataColumn<PaymentRoute>[] = [
 		{
-			key: "service",
+			id: "service",
 			header: "Service",
-			cell: (route) => titleCase(route.service_type),
+			cell: ({ row: { original: route } }) => titleCase(route.service_type),
 		},
 		{
-			key: "method",
+			id: "method",
 			header: "Method",
-			cell: (route) => (
+			cell: ({ row: { original: route } }) => (
 				<code className="font-medium">{route.payment_method}</code>
 			),
 		},
 		{
-			key: "account",
+			id: "account",
 			header: "Provider account",
-			cell: (route) => (
+			cell: ({ row: { original: route } }) => (
 				<Link
 					className="font-medium underline-offset-4 hover:underline"
 					to={`/providers/${route.provider_account_id}`}
@@ -285,23 +285,23 @@ export function PaymentRoutes() {
 			),
 		},
 		{
-			key: "priority",
+			id: "priority",
 			header: "Priority",
-			align: "end",
-			cell: (route) => route.priority,
+			meta: { align: "end" },
+			cell: ({ row: { original: route } }) => route.priority,
 		},
 		{
-			key: "active",
+			id: "active",
 			header: "Status",
-			cell: (route) => (
+			cell: ({ row: { original: route } }) => (
 				<StatusBadge status={route.active ? "active" : "inactive"} />
 			),
 		},
 		{
-			key: "actions",
+			id: "actions",
 			header: "",
-			align: "end",
-			cell: (route) => (
+			meta: { align: "end" },
+			cell: ({ row: { original: route } }) => (
 				<GuardedAction
 					permission={AdminPermissions.routesUpdate}
 					variant="outline"

@@ -1,4 +1,4 @@
-import { DataTable, type Column } from "@/components/data-table";
+import { DataTable, type DataColumn } from "@/components/data-table";
 import { PaginationControls } from "@/components/pagination-controls";
 import { StatusBadge } from "@/components/status-badge";
 import {
@@ -21,33 +21,35 @@ import { usePagedQuery } from "@/hooks/use-paged-query";
 import { formatDateTime, titleCase } from "@/lib/format";
 import { keys } from "@/lib/query-keys";
 
-const workerColumns: Column<WorkerState>[] = [
+const workerColumns: DataColumn<WorkerState>[] = [
 	{
-		key: "name",
+		id: "name",
 		header: "Worker",
-		cell: (worker) => (
+		cell: ({ row: { original: worker } }) => (
 			<span className="font-medium">{titleCase(worker.name)}</span>
 		),
 	},
 	{
-		key: "configured",
+		id: "configured",
 		header: "Configured",
-		cell: (worker) => (
+		cell: ({ row: { original: worker } }) => (
 			<StatusBadge status={worker.configured ? "active" : "inactive"} />
 		),
 	},
 	{
-		key: "state",
+		id: "state",
 		header: "State",
-		cell: (worker) => <StatusBadge status={worker.state} />,
+		cell: ({ row: { original: worker } }) => (
+			<StatusBadge status={worker.state} />
+		),
 	},
 ];
 
-const healthColumns: Column<ProviderHealthSnapshot>[] = [
+const healthColumns: DataColumn<ProviderHealthSnapshot>[] = [
 	{
-		key: "account",
+		id: "account",
 		header: "Provider account",
-		cell: (row) => (
+		cell: ({ row: { original: row } }) => (
 			<Link
 				className="font-medium underline-offset-4 hover:underline"
 				to={`/providers/${row.provider_account_id}`}
@@ -57,49 +59,51 @@ const healthColumns: Column<ProviderHealthSnapshot>[] = [
 		),
 	},
 	{
-		key: "status",
+		id: "status",
 		header: "Status",
-		cell: (row) => <StatusBadge status={row.status} />,
+		cell: ({ row: { original: row } }) => <StatusBadge status={row.status} />,
 	},
 	{
-		key: "circuit",
+		id: "circuit",
 		header: "Circuit",
-		cell: (row) => <StatusBadge status={row.circuit_state} />,
+		cell: ({ row: { original: row } }) => (
+			<StatusBadge status={row.circuit_state} />
+		),
 	},
 	{
-		key: "failures",
+		id: "failures",
 		header: "Failures",
-		align: "end",
-		cell: (row) => row.consecutive_failures,
+		meta: { align: "end" },
+		cell: ({ row: { original: row } }) => row.consecutive_failures,
 	},
 	{
-		key: "latency",
+		id: "latency",
 		header: "Latency",
-		align: "end",
-		cell: (row) => `${row.latency_ms} ms`,
+		meta: { align: "end" },
+		cell: ({ row: { original: row } }) => `${row.latency_ms} ms`,
 	},
 	{
-		key: "checked",
+		id: "checked",
 		header: "Last checked",
-		cell: (row) => formatDateTime(row.last_checked_at),
+		cell: ({ row: { original: row } }) => formatDateTime(row.last_checked_at),
 	},
 	{
-		key: "error",
+		id: "error",
 		header: "Last error",
-		cell: (row) => row.last_error_message || "—",
+		cell: ({ row: { original: row } }) => row.last_error_message || "—",
 	},
 ];
 
-const runtimeColumns: Column<RuntimeProvider>[] = [
+const runtimeColumns: DataColumn<RuntimeProvider>[] = [
 	{
-		key: "code",
+		id: "code",
 		header: "Provider",
-		cell: (row) => <code>{row.provider_code}</code>,
+		cell: ({ row: { original: row } }) => <code>{row.provider_code}</code>,
 	},
 	{
-		key: "account",
+		id: "account",
 		header: "Account",
-		cell: (row) => (
+		cell: ({ row: { original: row } }) => (
 			<Link
 				className="font-medium underline-offset-4 hover:underline"
 				to={`/providers/${row.provider_account_id}`}
@@ -109,24 +113,32 @@ const runtimeColumns: Column<RuntimeProvider>[] = [
 		),
 	},
 	{
-		key: "initialized",
+		id: "initialized",
 		header: "Initialized",
-		cell: (row) => (
+		cell: ({ row: { original: row } }) => (
 			<StatusBadge status={row.initialized ? "active" : "inactive"} />
 		),
 	},
 	{
-		key: "version",
+		id: "version",
 		header: "Config",
-		cell: (row) => `v${row.config_version}`,
+		cell: ({ row: { original: row } }) => `v${row.config_version}`,
 	},
-	{ key: "country", header: "Country", cell: (row) => row.country },
-	{ key: "currency", header: "Currency", cell: (row) => row.currency },
 	{
-		key: "capabilities",
+		id: "country",
+		header: "Country",
+		cell: ({ row: { original: row } }) => row.country,
+	},
+	{
+		id: "currency",
+		header: "Currency",
+		cell: ({ row: { original: row } }) => row.currency,
+	},
+	{
+		id: "capabilities",
 		header: "Capabilities",
-		align: "end",
-		cell: (row) => row.capabilities.length,
+		meta: { align: "end" },
+		cell: ({ row: { original: row } }) => row.capabilities.length,
 	},
 ];
 

@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AdminPermissions, type AdminUser } from "momobase";
 
-import { DataTable, type Column } from "@/components/data-table";
+import { DataTable, type DataColumn } from "@/components/data-table";
 import { GuardedAction } from "@/components/guarded-action";
 import { PaginationControls } from "@/components/pagination-controls";
 import { StatusBadge } from "@/components/status-badge";
@@ -229,29 +229,41 @@ export function Users() {
 		onError: (error: Error) => toast.error(error.message),
 	});
 
-	const columns: Column<AdminUser>[] = [
+	const columns: DataColumn<AdminUser>[] = [
 		{
-			key: "name",
+			id: "name",
 			header: "Name",
-			cell: (user) => <span className="font-medium">{user.name}</span>,
+			cell: ({ row: { original: user } }) => (
+				<span className="font-medium">{user.name}</span>
+			),
 		},
-		{ key: "email", header: "Email", cell: (user) => user.email },
-		{ key: "role", header: "Role", cell: (user) => titleCase(user.role) },
 		{
-			key: "status",
+			id: "email",
+			header: "Email",
+			cell: ({ row: { original: user } }) => user.email,
+		},
+		{
+			id: "role",
+			header: "Role",
+			cell: ({ row: { original: user } }) => titleCase(user.role),
+		},
+		{
+			id: "status",
 			header: "Status",
-			cell: (user) => <StatusBadge status={user.status} />,
+			cell: ({ row: { original: user } }) => (
+				<StatusBadge status={user.status} />
+			),
 		},
 		{
-			key: "created",
+			id: "created",
 			header: "Created",
-			cell: (user) => formatDateTime(user.created_at),
+			cell: ({ row: { original: user } }) => formatDateTime(user.created_at),
 		},
 		{
-			key: "actions",
+			id: "actions",
 			header: "",
-			align: "end",
-			cell: (user) => (
+			meta: { align: "end" },
+			cell: ({ row: { original: user } }) => (
 				<div className="flex justify-end gap-2">
 					<GuardedAction
 						permission={AdminPermissions.usersUpdate}

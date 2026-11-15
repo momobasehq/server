@@ -1,4 +1,4 @@
-import { DataTable, type Column } from "@/components/data-table";
+import { DataTable, type DataColumn } from "@/components/data-table";
 import { PaginationControls } from "@/components/pagination-controls";
 import { ActionBadge } from "@/components/status-badge";
 import {
@@ -32,35 +32,35 @@ function Party({ type, id }: { type: string; id?: string }) {
 	);
 }
 
-const columns: Column<AuditLog>[] = [
+const columns: DataColumn<AuditLog>[] = [
 	{
-		key: "action",
+		id: "action",
 		header: "Action",
-		cell: (log) => <ActionBadge action={log.action} />,
+		cell: ({ row: { original: log } }) => <ActionBadge action={log.action} />,
 	},
 	{
-		key: "entity",
+		id: "entity",
 		header: "Entity",
-		cell: (log) => (
+		cell: ({ row: { original: log } }) => (
 			<Party type={log.entity_type || "—"} id={log.entity_id} />
 		),
 	},
 	{
-		key: "actor",
+		id: "actor",
 		header: "Actor",
-		cell: (log) => (
+		cell: ({ row: { original: log } }) => (
 			<Party type={log.actor_type || "system"} id={log.actor_id} />
 		),
 	},
 	{
-		key: "ip",
+		id: "ip",
 		header: "IP",
-		cell: (log) => <code>{log.ip_address || "—"}</code>,
+		cell: ({ row: { original: log } }) => <code>{log.ip_address || "—"}</code>,
 	},
 	{
-		key: "at",
+		id: "at",
 		header: "When",
-		cell: (log) => formatDateTime(log.created_at),
+		cell: ({ row: { original: log } }) => formatDateTime(log.created_at),
 	},
 ];
 
