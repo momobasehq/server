@@ -27,6 +27,7 @@ import {
 import { AppTester } from "@/components/app-tester";
 import { GuardedAction } from "@/components/guarded-action";
 import { PaginationControls } from "@/components/pagination-controls";
+import { rowActionsColumn } from "@/components/row-actions";
 import { StatusBadge } from "@/components/status-badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -297,11 +298,13 @@ export function AppDetail() {
 		...(canRevoke ? [selectColumn<AppCredential>()] : []),
 		{
 			id: "name",
+			accessorFn: (r) => r.name,
 			header: "Name",
 			cell: ({ row: { original: credential } }) => credential.name || "—",
 		},
 		{
 			id: "client_id",
+			accessorFn: (r) => r.client_id,
 			header: "Client ID",
 			cell: ({ row: { original: credential } }) => (
 				<code>{credential.client_id}</code>
@@ -309,6 +312,7 @@ export function AppDetail() {
 		},
 		{
 			id: "scopes",
+			accessorFn: (r) => r.scopes,
 			header: "Scopes",
 			cell: ({ row: { original: credential } }) => (
 				<code>{credential.scopes || "—"}</code>
@@ -316,6 +320,7 @@ export function AppDetail() {
 		},
 		{
 			id: "status",
+			accessorFn: (r) => r.status,
 			header: "Status",
 			cell: ({ row: { original: credential } }) => (
 				<StatusBadge status={credential.status} />
@@ -323,41 +328,26 @@ export function AppDetail() {
 		},
 		{
 			id: "used",
+			accessorFn: (r) => r.last_used_at,
 			header: "Last used",
 			cell: ({ row: { original: credential } }) =>
 				formatDateTime(credential.last_used_at),
 		},
-		{
-			id: "actions",
-			header: "",
-			meta: { align: "end" },
-			cell: ({ row: { original: credential } }) => (
-				<div className="flex justify-end gap-2">
-					<GuardedAction
-						permission={AdminPermissions.credentialsUpdate}
-						variant="outline"
-						size="sm"
-						disabled={
-							rotate.isPending || credential.status !== "active"
-						}
-						onClick={() => rotate.mutate(credential.id)}
-					>
-						Rotate
-					</GuardedAction>
-					<GuardedAction
-						permission={AdminPermissions.credentialsUpdate}
-						variant="destructive"
-						size="sm"
-						disabled={
-							revoke.isPending || credential.status !== "active"
-						}
-						onClick={() => revoke.mutate(credential.id)}
-					>
-						Revoke
-					</GuardedAction>
-				</div>
-			),
-		},
+		rowActionsColumn<AppCredential>((credential) => [
+			{
+				label: "Rotate secret",
+				permission: AdminPermissions.credentialsUpdate,
+				disabled: rotate.isPending || credential.status !== "active",
+				onSelect: () => rotate.mutate(credential.id),
+			},
+			{
+				label: "Revoke",
+				destructive: true,
+				permission: AdminPermissions.credentialsUpdate,
+				disabled: revoke.isPending || credential.status !== "active",
+				onSelect: () => revoke.mutate(credential.id),
+			},
+		]),
 	];
 
 	return (
@@ -546,6 +536,7 @@ export function AppDetail() {
 							</CardHeader>
 							<CardContent>
 								<DataTable
+									tableId="credentials"
 									columns={columns}
 									rows={paged.items}
 									rowKey={(credential) => credential.id}

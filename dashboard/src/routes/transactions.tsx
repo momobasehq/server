@@ -1,10 +1,10 @@
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 
-import { ColumnToggle, useColumnVisibility } from "@/components/column-toggle";
 import { DataTable, type DataColumn } from "@/components/data-table";
 import { PaginationControls } from "@/components/pagination-controls";
+import { rowActionsColumn } from "@/components/row-actions";
 import { StatusBadge } from "@/components/status-badge";
 import { Timestamp } from "@/components/timestamp";
 import {
@@ -64,6 +64,7 @@ function signedAmount(tx: AdminTransaction) {
 const columns: DataColumn<AdminTransaction>[] = [
 	{
 		id: "reference",
+		accessorFn: (r) => r.reference,
 		header: "Reference",
 		enableHiding: false,
 		cell: ({ row: { original: tx } }) => (
@@ -72,6 +73,7 @@ const columns: DataColumn<AdminTransaction>[] = [
 	},
 	{
 		id: "service",
+		accessorFn: (r) => r.service_type,
 		header: "Service",
 		cell: ({ row: { original: tx } }) => <Service type={tx.service_type} />,
 	},
@@ -79,11 +81,13 @@ const columns: DataColumn<AdminTransaction>[] = [
 	// shows whatever the integrator sent rather than a known set of rails.
 	{
 		id: "method",
+		accessorFn: (r) => r.payment_method,
 		header: "Method",
 		cell: ({ row: { original: tx } }) => <code>{tx.payment_method}</code>,
 	},
 	{
 		id: "amount",
+		accessorFn: (r) => r.amount,
 		header: "Amount",
 		meta: { align: "end" },
 		cell: ({ row: { original: tx } }) => (
@@ -92,6 +96,7 @@ const columns: DataColumn<AdminTransaction>[] = [
 	},
 	{
 		id: "provider_fee",
+		accessorFn: (r) => r.provider_fee,
 		header: "Provider fee",
 		meta: { align: "end" },
 		cell: ({ row: { original: tx } }) =>
@@ -99,6 +104,7 @@ const columns: DataColumn<AdminTransaction>[] = [
 	},
 	{
 		id: "platform_fee",
+		accessorFn: (r) => r.platform_fee,
 		header: "Platform fee",
 		meta: { align: "end" },
 		cell: ({ row: { original: tx } }) =>
@@ -106,6 +112,7 @@ const columns: DataColumn<AdminTransaction>[] = [
 	},
 	{
 		id: "account",
+		accessorFn: (r) => r.customer_account,
 		header: "Account",
 		cell: ({ row: { original: tx } }) => (
 			<code>{tx.customer_account || "—"}</code>
@@ -113,16 +120,19 @@ const columns: DataColumn<AdminTransaction>[] = [
 	},
 	{
 		id: "country",
+		accessorFn: (r) => r.country,
 		header: "Country",
 		cell: ({ row: { original: tx } }) => tx.country || "—",
 	},
 	{
 		id: "status",
+		accessorFn: (r) => r.status,
 		header: "Status",
 		cell: ({ row: { original: tx } }) => <StatusBadge status={tx.status} />,
 	},
 	{
 		id: "created",
+		accessorFn: (r) => r.created_at,
 		header: "Created",
 		cell: ({ row: { original: tx } }) => <Timestamp value={tx.created_at} />,
 	},
@@ -138,7 +148,15 @@ export function Transactions() {
 		{ refetchInterval: live && liveInterval },
 	);
 	const [selected, setSelected] = useState<AdminTransaction>();
-	const visibility = useColumnVisibility("transactions");
+	const withActions = useMemo(
+		() => [
+			...columns,
+			rowActionsColumn<AdminTransaction>((tx) => [
+				{ label: "View details", onSelect: () => setSelected(tx) },
+			]),
+		],
+		[],
+	);
 
 	return (
 		<Card>
@@ -158,14 +176,13 @@ export function Transactions() {
 			</CardHeader>
 			<CardContent>
 				<DataTable
-					columns={columns}
 					rows={paged.items}
 					rowKey={(tx) => tx.id}
 					loading={paged.loading}
 					empty="No payments have been created yet."
 					onRowClick={setSelected}
-					{...visibility}
-					toolbar={(table) => <ColumnToggle table={table} />}
+					tableId="transactions"
+					columns={withActions}
 				/>
 				<PaginationControls
 					page={paged.page}

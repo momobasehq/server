@@ -35,11 +35,13 @@ function Party({ type, id }: { type: string; id?: string }) {
 const columns: DataColumn<AuditLog>[] = [
 	{
 		id: "action",
+		accessorFn: (r) => r.action,
 		header: "Action",
 		cell: ({ row: { original: log } }) => <ActionBadge action={log.action} />,
 	},
 	{
 		id: "entity",
+		accessorFn: (r) => `${r.entity_type ?? ""} ${r.entity_id ?? ""}`,
 		header: "Entity",
 		cell: ({ row: { original: log } }) => (
 			<Party type={log.entity_type || "—"} id={log.entity_id} />
@@ -47,6 +49,7 @@ const columns: DataColumn<AuditLog>[] = [
 	},
 	{
 		id: "actor",
+		accessorFn: (r) => `${r.actor_type || "system"} ${r.actor_id ?? ""}`,
 		header: "Actor",
 		cell: ({ row: { original: log } }) => (
 			<Party type={log.actor_type || "system"} id={log.actor_id} />
@@ -54,11 +57,13 @@ const columns: DataColumn<AuditLog>[] = [
 	},
 	{
 		id: "ip",
+		accessorFn: (r) => r.ip_address,
 		header: "IP",
 		cell: ({ row: { original: log } }) => <code>{log.ip_address || "—"}</code>,
 	},
 	{
 		id: "at",
+		accessorFn: (r) => r.created_at,
 		header: "When",
 		cell: ({ row: { original: log } }) => formatDateTime(log.created_at),
 	},
@@ -81,6 +86,7 @@ export function Audit() {
 			</CardHeader>
 			<CardContent>
 				<DataTable
+					tableId="audit"
 					columns={columns}
 					rows={paged.items}
 					rowKey={(log) => log.id}

@@ -13,6 +13,7 @@ import {
 import { DataTable, type DataColumn } from "@/components/data-table";
 import { GuardedAction } from "@/components/guarded-action";
 import { PaginationControls } from "@/components/pagination-controls";
+import { rowActionsColumn } from "@/components/row-actions";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -262,11 +263,13 @@ export function PaymentRoutes() {
 	const columns: DataColumn<PaymentRoute>[] = [
 		{
 			id: "service",
+			accessorFn: (r) => r.service_type,
 			header: "Service",
 			cell: ({ row: { original: route } }) => titleCase(route.service_type),
 		},
 		{
 			id: "method",
+			accessorFn: (r) => r.payment_method,
 			header: "Method",
 			cell: ({ row: { original: route } }) => (
 				<code className="font-medium">{route.payment_method}</code>
@@ -274,6 +277,7 @@ export function PaymentRoutes() {
 		},
 		{
 			id: "account",
+			accessorFn: (r) => r.provider_name || r.provider_account_id,
 			header: "Provider account",
 			cell: ({ row: { original: route } }) => (
 				<Link
@@ -286,39 +290,32 @@ export function PaymentRoutes() {
 		},
 		{
 			id: "priority",
+			accessorFn: (r) => r.priority,
 			header: "Priority",
 			meta: { align: "end" },
 			cell: ({ row: { original: route } }) => route.priority,
 		},
 		{
 			id: "active",
+			accessorFn: (r) => (r.active ? "active" : "inactive"),
 			header: "Status",
 			cell: ({ row: { original: route } }) => (
 				<StatusBadge status={route.active ? "active" : "inactive"} />
 			),
 		},
-		{
-			id: "actions",
-			header: "",
-			meta: { align: "end" },
-			cell: ({ row: { original: route } }) => (
-				<GuardedAction
-					permission={AdminPermissions.routesUpdate}
-					variant="outline"
-					size="sm"
-					disabled={update.isPending}
-					onClick={() =>
-						update.mutate({
-							id: route.id,
-							priority: route.priority,
-							active: !route.active,
-						})
-					}
-				>
-					{route.active ? "Disable" : "Enable"}
-				</GuardedAction>
-			),
-		},
+		rowActionsColumn<PaymentRoute>((route) => [
+			{
+				label: route.active ? "Disable" : "Enable",
+				permission: AdminPermissions.routesUpdate,
+				disabled: update.isPending,
+				onSelect: () =>
+					update.mutate({
+						id: route.id,
+						priority: route.priority,
+						active: !route.active,
+					}),
+			},
+		]),
 	];
 
 	return (
@@ -342,6 +339,7 @@ export function PaymentRoutes() {
 			</CardHeader>
 			<CardContent>
 				<DataTable
+					tableId="routes"
 					columns={columns}
 					rows={paged.items}
 					rowKey={(route) => route.id}

@@ -10,6 +10,7 @@ import {
 } from "momobase";
 
 import { DataTable, type DataColumn } from "@/components/data-table";
+import { rowActionsColumn } from "@/components/row-actions";
 import { GuardedAction } from "@/components/guarded-action";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -255,6 +256,7 @@ export function Roles() {
 	const columns: DataColumn<Role>[] = [
 		{
 			id: "name",
+			accessorFn: (r) => r.name,
 			header: "Role",
 			cell: ({ row: { original: role } }) => (
 				<span className="flex items-center gap-2 font-medium">
@@ -273,11 +275,13 @@ export function Roles() {
 		},
 		{
 			id: "description",
+			accessorFn: (r) => r.description,
 			header: "Description",
 			cell: ({ row: { original: role } }) => role.description || "—",
 		},
 		{
 			id: "permissions",
+			accessorFn: (r) => r.permissions.length,
 			header: "Permissions",
 			cell: ({ row: { original: role } }) =>
 				role.permissions.some(
@@ -288,33 +292,21 @@ export function Roles() {
 					<span>{role.permissions.length}</span>
 				),
 		},
-		{
-			id: "actions",
-			header: "",
-			meta: { align: "end" },
-			cell: ({ row: { original: role } }) => (
-				<div className="flex justify-end gap-2">
-					<GuardedAction
-						permission={AdminPermissions.rolesUpdate}
-						variant="outline"
-						size="sm"
-						disabled={role.system}
-						onClick={() => setEditing(role)}
-					>
-						Edit
-					</GuardedAction>
-					<GuardedAction
-						permission={AdminPermissions.rolesDelete}
-						variant="destructive"
-						size="sm"
-						disabled={role.system || remove.isPending}
-						onClick={() => remove.mutate(role.name)}
-					>
-						Delete
-					</GuardedAction>
-				</div>
-			),
-		},
+		rowActionsColumn<Role>((role) => [
+			{
+				label: "Edit",
+				permission: AdminPermissions.rolesUpdate,
+				disabled: role.system,
+				onSelect: () => setEditing(role),
+			},
+			{
+				label: "Delete",
+				destructive: true,
+				permission: AdminPermissions.rolesDelete,
+				disabled: role.system || remove.isPending,
+				onSelect: () => remove.mutate(role.name),
+			},
+		]),
 	];
 
 	return (
@@ -338,6 +330,7 @@ export function Roles() {
 			</CardHeader>
 			<CardContent>
 				<DataTable
+					tableId="roles"
 					columns={columns}
 					rows={roles.data?.items ?? []}
 					rowKey={(role) => role.id}

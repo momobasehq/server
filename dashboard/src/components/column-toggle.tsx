@@ -31,10 +31,11 @@ function readVisibility(storageKey: string): ColumnVisibilityState {
  * useColumnVisibility holds a table's column visibility. The choice is a per-viewer
  * convenience, so it lives in localStorage and a failed write is simply not remembered.
  */
-export function useColumnVisibility(storageKey: string) {
-	const key = `momobase:columns:${storageKey}`;
+export function useColumnVisibility(storageKey?: string) {
+	// Without a name the choice still applies, but only until the screen unmounts.
+	const key = storageKey && `momobase:columns:${storageKey}`;
 	const [columnVisibility, setVisibility] = useState(() =>
-		readVisibility(key),
+		key ? readVisibility(key) : {},
 	);
 
 	const onColumnVisibilityChange: OnChangeFn<ColumnVisibilityState> = (
@@ -43,6 +44,7 @@ export function useColumnVisibility(storageKey: string) {
 		const next =
 			typeof updater === "function" ? updater(columnVisibility) : updater;
 		setVisibility(next);
+		if (!key) return;
 		try {
 			localStorage.setItem(key, JSON.stringify(next));
 		} catch {

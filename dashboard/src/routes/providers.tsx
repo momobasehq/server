@@ -13,6 +13,7 @@ import {
 } from "@/components/country-select";
 import { GuardedAction } from "@/components/guarded-action";
 import { PaginationControls } from "@/components/pagination-controls";
+import { rowActionsColumn } from "@/components/row-actions";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -511,6 +512,7 @@ export function Providers() {
 	const columns: DataColumn<ProviderAccount>[] = [
 		{
 			id: "name",
+			accessorFn: (r) => r.name,
 			header: "Name",
 			cell: ({ row: { original: account } }) => (
 				<Link
@@ -523,6 +525,7 @@ export function Providers() {
 		},
 		{
 			id: "code",
+			accessorFn: (r) => r.provider_code,
 			header: "Provider",
 			cell: ({ row: { original: account } }) => (
 				<code>{account.provider_code}</code>
@@ -530,6 +533,7 @@ export function Providers() {
 		},
 		{
 			id: "environment",
+			accessorFn: (r) => r.environment,
 			header: "Environment",
 			cell: ({ row: { original: account } }) => (
 				<StatusBadge status={account.environment} />
@@ -537,6 +541,7 @@ export function Providers() {
 		},
 		{
 			id: "country",
+			accessorFn: (r) => r.country,
 			header: "Country",
 			cell: ({ row: { original: account } }) => (
 				<span className="flex items-center gap-2">
@@ -547,11 +552,13 @@ export function Providers() {
 		},
 		{
 			id: "currency",
+			accessorFn: (r) => r.currency,
 			header: "Currency",
 			cell: ({ row: { original: account } }) => account.currency,
 		},
 		{
 			id: "active",
+			accessorFn: (r) => (r.active ? "active" : "inactive"),
 			header: "Status",
 			cell: ({ row: { original: account } }) => (
 				<StatusBadge status={account.active ? "active" : "inactive"} />
@@ -559,55 +566,38 @@ export function Providers() {
 		},
 		{
 			id: "version",
+			accessorFn: (r) => r.config_version,
 			header: "Config",
 			cell: ({ row: { original: account } }) => `v${account.config_version}`,
 		},
 		{
 			id: "updated",
+			accessorFn: (r) => r.updated_at,
 			header: "Updated",
 			cell: ({ row: { original: account } }) =>
 				formatDateTime(account.updated_at),
 		},
-		{
-			id: "actions",
-			header: "",
-			meta: { align: "end" },
-			cell: ({ row: { original: account } }) => (
-				<div className="flex justify-end gap-2">
-					<GuardedAction
-						permission={AdminPermissions.providersTest}
-						variant="outline"
-						size="sm"
-						disabled={test.isPending}
-						onClick={() => test.mutate(account.id)}
-					>
-						Test
-					</GuardedAction>
-					<GuardedAction
-						permission={AdminPermissions.providersUpdate}
-						variant="outline"
-						size="sm"
-						onClick={() => setConfiguring(account)}
-					>
-						Configure
-					</GuardedAction>
-					<GuardedAction
-						permission={AdminPermissions.providersUpdate}
-						variant={account.active ? "destructive" : "default"}
-						size="sm"
-						disabled={toggle.isPending}
-						onClick={() =>
-							toggle.mutate({
-								id: account.id,
-								active: account.active,
-							})
-						}
-					>
-						{account.active ? "Deactivate" : "Activate"}
-					</GuardedAction>
-				</div>
-			),
-		},
+		rowActionsColumn<ProviderAccount>((account) => [
+			{
+				label: "Test connection",
+				permission: AdminPermissions.providersTest,
+				disabled: test.isPending,
+				onSelect: () => test.mutate(account.id),
+			},
+			{
+				label: "Configure",
+				permission: AdminPermissions.providersUpdate,
+				onSelect: () => setConfiguring(account),
+			},
+			{
+				label: account.active ? "Deactivate" : "Activate",
+				destructive: account.active,
+				permission: AdminPermissions.providersUpdate,
+				disabled: toggle.isPending,
+				onSelect: () =>
+					toggle.mutate({ id: account.id, active: account.active }),
+			},
+		]),
 	];
 
 	return (
@@ -632,6 +622,7 @@ export function Providers() {
 				</CardHeader>
 				<CardContent>
 					<DataTable
+						tableId="providers"
 						columns={columns}
 						rows={paged.items}
 						rowKey={(account) => account.id}
@@ -660,9 +651,11 @@ export function Providers() {
 					</CardHeader>
 					<CardContent>
 						<DataTable
+							tableId="balances"
 							columns={[
 								{
 									id: "provider",
+									accessorFn: (r) => r.provider_code ?? r.provider_account_id,
 									header: "Provider",
 									cell: ({ row: { original: row } }) => (
 										<code>
@@ -673,11 +666,13 @@ export function Providers() {
 								},
 								{
 									id: "country",
+									accessorFn: (r) => r.country,
 									header: "Country",
 									cell: ({ row: { original: row } }) => row.country,
 								},
 								{
 									id: "status",
+									accessorFn: (r) => r.status,
 									header: "Status",
 									cell: ({ row: { original: row } }) => (
 										<StatusBadge status={row.status} />
@@ -685,6 +680,7 @@ export function Providers() {
 								},
 								{
 									id: "available",
+									accessorFn: (r) => r.balance?.available,
 									header: "Available",
 									meta: { align: "end" },
 									cell: ({ row: { original: row } }) =>
@@ -697,6 +693,7 @@ export function Providers() {
 								},
 								{
 									id: "ledger",
+									accessorFn: (r) => r.balance?.ledger,
 									header: "Ledger",
 									meta: { align: "end" },
 									cell: ({ row: { original: row } }) =>
@@ -709,6 +706,7 @@ export function Providers() {
 								},
 								{
 									id: "error",
+									accessorFn: (r) => r.error,
 									header: "Error",
 									cell: ({ row: { original: row } }) => row.error ?? "—",
 								},

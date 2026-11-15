@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, Plus } from "lucide-react";
-import { Link } from "react-router";
+import { Plus } from "lucide-react";
+import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
 import { AdminPermissions, type App, type ChargeSchedule } from "momobase";
 
@@ -10,6 +10,7 @@ import { ChargeFields, zeroCharges } from "@/components/charge-fields";
 import { CurrencyFlag, CurrencySelect } from "@/components/country-select";
 import { GuardedAction } from "@/components/guarded-action";
 import { PaginationControls } from "@/components/pagination-controls";
+import { rowActionsColumn } from "@/components/row-actions";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -188,6 +189,7 @@ function CreateAppDialog({
 
 /** Apps lists integrating applications and links to their credentials. */
 export function Apps() {
+	const navigate = useNavigate();
 	const { client } = useAuth();
 	const paged = usePagedQuery(keys.apps.list, (page) =>
 		client.apps.list(page),
@@ -197,6 +199,7 @@ export function Apps() {
 	const columns: DataColumn<App>[] = [
 		{
 			id: "name",
+			accessorFn: (r) => r.name,
 			header: "Name",
 			// Underlined unconditionally: with hover-only underline this read as plain text,
 			// so the detail page — and every credential on it — looked like it did not exist.
@@ -211,6 +214,7 @@ export function Apps() {
 		},
 		{
 			id: "environment",
+			accessorFn: (r) => r.environment,
 			header: "Environment",
 			cell: ({ row: { original: app } }) => (
 				<StatusBadge status={app.environment} />
@@ -218,6 +222,7 @@ export function Apps() {
 		},
 		{
 			id: "currency",
+			accessorFn: (r) => r.currency,
 			header: "Currency",
 			cell: ({ row: { original: app } }) => (
 				<span className="flex items-center gap-2">
@@ -228,36 +233,27 @@ export function Apps() {
 		},
 		{
 			id: "status",
+			accessorFn: (r) => r.status,
 			header: "Status",
 			cell: ({ row: { original: app } }) => <StatusBadge status={app.status} />,
 		},
 		{
 			id: "description",
+			accessorFn: (r) => r.description,
 			header: "Description",
 			cell: ({ row: { original: app } }) => app.description || "—",
 		},
 		{
 			id: "created",
+			accessorFn: (r) => r.created_at,
 			header: "Created",
 			cell: ({ row: { original: app } }) => formatDateTime(app.created_at),
 		},
-		{
-			id: "actions",
-			header: "",
-			meta: { align: "end" },
-			// Status, credentials, and the tester all live on the detail page, so the list
-			// offers one unambiguous way in rather than a partial set of actions.
-			cell: ({ row: { original: app } }) => (
-				<Button
-					variant="outline"
-					size="sm"
-					render={<Link to={`/apps/${app.id}`} />}
-				>
-					Manage
-					<ChevronRight />
-				</Button>
-			),
-		},
+		// Status, credentials, and the tester all live on the detail page, so the menu
+		// offers one unambiguous way in rather than a partial set of actions.
+		rowActionsColumn<App>((app) => [
+			{ label: "Manage", onSelect: () => void navigate(`/apps/${app.id}`) },
+		]),
 	];
 
 	return (
@@ -280,6 +276,7 @@ export function Apps() {
 			</CardHeader>
 			<CardContent>
 				<DataTable
+					tableId="apps"
 					columns={columns}
 					rows={paged.items}
 					rowKey={(app) => app.id}

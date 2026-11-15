@@ -1,19 +1,33 @@
-import { type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
+	columnFilteringFeature,
 	columnVisibilityFeature,
+	createFilteredRowModel,
+	createSortedRowModel,
+	globalFilteringFeature,
 	rowSelectionFeature,
+	rowSortingFeature,
+	sortFn_alphanumeric,
+	sortFn_basic,
+	sortFn_datetime,
+	sortFn_text,
 	tableFeatures,
 	useTable,
 	type ColumnDef,
-	type ColumnVisibilityState,
 	type OnChangeFn,
 	type ReactTable,
+	type Row,
 	type RowData,
 	type RowSelectionState,
 } from "@tanstack/react-table";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 
+import { ColumnToggle, useColumnVisibility } from "@/components/column-toggle";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import {
 	Table,
 	TableBody,
@@ -24,13 +38,45 @@ import {
 } from "@/components/ui/table";
 
 /**
- * Only the features these tables use, so the rest of TanStack Table is tree-shaken.
- * There is no sorting, filtering or pagination feature on purpose: lists are paged
- * on the server, and those would act on one loaded page while looking global.
+ * contains matches a search term anywhere in a cell's raw value, case-insensitively.
+ * Values are stringified so numbers, dates and enums are searchable alike.
+ */
+function contains<TFeatures extends typeof base, T extends RowData>(
+	row: Row<TFeatures, T>,
+	columnId: string,
+	term: string,
+) {
+	const value = row.getValue(columnId);
+	return (
+		value != null &&
+		String(value).toLowerCase().includes(term.trim().toLowerCase())
+	);
+}
+
+const base = {
+	// Global search runs through the column filter pipeline, so both are needed.
+	columnFilteringFeature,
+	columnVisibilityFeature,
+	globalFilteringFeature,
+	rowSelectionFeature,
+	rowSortingFeature,
+};
+
+/**
+ * The shadcn data-table guide's feature set. Lists are paged on the server, so search
+ * and sorting act on the loaded page only, which the search placeholder says.
  */
 export const features = tableFeatures({
-	columnVisibilityFeature,
-	rowSelectionFeature,
+	...base,
+	filteredRowModel: createFilteredRowModel(),
+	sortedRowModel: createSortedRowModel(),
+	filterFns: { contains },
+	sortFns: {
+		alphanumeric: sortFn_alphanumeric,
+		basic: sortFn_basic,
+		datetime: sortFn_datetime,
+		text: sortFn_text,
+	},
 	columnMeta: {} as {
 		/** Right-aligns numeric columns. */
 		align?: "start" | "end";
@@ -39,8 +85,9 @@ export const features = tableFeatures({
 
 export type Features = typeof features;
 
-/** DataColumn is one column definition for a DataTable of T. */
-// `any` value: each cell renders from row.original, so no column declares an accessor type.
+/** DataColumn is one column definition for a DataTable of T. Columns with an
+ * accessorFn are sortable and searchable; display-only columns are neither. */
+// `any` value: accessors return mixed types, and cells render from row.original.
 export type DataColumn<T extends RowData> = ColumnDef<Features, T, any>;
 
 export type DataTableInstance<T extends RowData> = ReactTable<Features, T>;
@@ -54,16 +101,15 @@ interface DataTableProps<T extends RowData> {
 	empty?: ReactNode;
 	/** Makes each populated row an accessible action. */
 	onRowClick?: (row: T) => void;
-	/** Controlled visibility, from useColumnVisibility. */
-	columnVisibility?: ColumnVisibilityState;
-	onColumnVisibilityChange?: OnChangeFn<ColumnVisibilityState>;
+	/** Remembers this table's column visibility across visits under this name. */
+	tableId?: string;
 	/** Controlled selection, keyed by rowKey; pair with selectColumn(). */
 	rowSelection?: RowSelectionState;
 	onRowSelectionChange?: OnChangeFn<RowSelectionState>;
 	/** Rows that cannot take the bulk action get a disabled box. */
 	canSelect?: (row: T) => boolean;
-	/** Renders above the table with the instance, e.g. a ColumnToggle. */
-	toolbar?: (table: DataTableInstance<T>) => ReactNode;
+	/** Extra toolbar controls, beside search and the Columns menu. */
+	toolbar?: ReactNode;
 }
 
 /**
@@ -77,35 +123,48 @@ export function DataTable<T extends RowData>({
 	loading,
 	empty,
 	onRowClick,
-	columnVisibility,
-	onColumnVisibilityChange,
+	tableId,
 	rowSelection,
 	onRowSelectionChange,
 	canSelect,
 	toolbar,
 }: DataTableProps<T>) {
+	const [globalFilter, setGlobalFilter] = useState("");
+	const visibility = useColumnVisibility(tableId);
 	const table = useTable({
 		features,
 		columns,
 		data: rows,
 		getRowId: rowKey,
+		globalFilterFn: "contains",
 		enableRowSelection: canSelect
 			? (row) => canSelect(row.original)
 			: true,
 		state: {
-			...(columnVisibility && { columnVisibility }),
+			globalFilter,
+			columnVisibility: visibility.columnVisibility,
 			...(rowSelection && { rowSelection }),
 		},
-		onColumnVisibilityChange,
+		onGlobalFilterChange: setGlobalFilter,
+		onColumnVisibilityChange: visibility.onColumnVisibilityChange,
 		onRowSelectionChange,
 	});
 	const visibleCount = table.getVisibleLeafColumns().length;
+	const shown = table.getRowModel().rows;
 
 	return (
 		<div className="flex flex-col gap-2">
-			{toolbar && (
-				<div className="flex items-center gap-2">{toolbar(table)}</div>
-			)}
+			<div className="flex flex-wrap items-center gap-2">
+				<Input
+					placeholder="Search this page…"
+					aria-label="Search this page"
+					value={globalFilter}
+					onChange={(event) => setGlobalFilter(event.target.value)}
+					className="h-7 max-w-xs"
+				/>
+				{toolbar}
+				<ColumnToggle table={table} />
+			</div>
 			{/* Wide tables scroll inside their own container rather than the page. */}
 			<div className="w-full overflow-x-auto">
 				<Table>
@@ -119,7 +178,19 @@ export function DataTable<T extends RowData>({
 											header.column.columnDef.meta?.align,
 										)}
 									>
-										{header.isPlaceholder ? null : (
+										{header.isPlaceholder ? null : header.column.getCanSort() ? (
+											<SortButton
+												align={header.column.columnDef.meta?.align}
+												sorted={header.column.getIsSorted()}
+												onClick={() =>
+													header.column.toggleSorting(
+														header.column.getIsSorted() === "asc",
+													)
+												}
+											>
+												<table.FlexRender header={header} />
+											</SortButton>
+										) : (
 											<table.FlexRender header={header} />
 										)}
 									</TableHead>
@@ -141,7 +212,7 @@ export function DataTable<T extends RowData>({
 										)}
 									</TableRow>
 								))
-							: table.getRowModel().rows.map((row) => (
+							: shown.map((row) => (
 									<TableRow
 										key={row.id}
 										data-state={
@@ -188,13 +259,15 @@ export function DataTable<T extends RowData>({
 										))}
 									</TableRow>
 								))}
-						{!loading && rows.length === 0 && (
+						{!loading && shown.length === 0 && (
 							<TableRow>
 								<TableCell
 									colSpan={visibleCount}
 									className="text-muted-foreground py-8 text-center"
 								>
-									{empty ?? "Nothing to show yet."}
+									{rows.length > 0
+										? "No results on this page."
+										: (empty ?? "Nothing to show yet.")}
 								</TableCell>
 							</TableRow>
 						)}
@@ -202,6 +275,33 @@ export function DataTable<T extends RowData>({
 				</Table>
 			</div>
 		</div>
+	);
+}
+
+/** SortButton is the guide's sortable header: label plus the current direction. */
+function SortButton({
+	align,
+	sorted,
+	onClick,
+	children,
+}: {
+	align?: "start" | "end";
+	sorted: false | "asc" | "desc";
+	onClick: () => void;
+	children: ReactNode;
+}) {
+	const Icon = sorted === "asc" ? ArrowUp : sorted === "desc" ? ArrowDown : ArrowUpDown;
+	return (
+		<Button
+			variant="ghost"
+			size="sm"
+			onClick={onClick}
+			// Pulled into the cell's padding so the label lines up with the values below.
+			className={cn("h-7 px-2", align === "end" ? "-me-2" : "-ms-2")}
+		>
+			{children}
+			<Icon className={sorted ? undefined : "text-muted-foreground"} />
+		</Button>
 	);
 }
 
@@ -217,6 +317,7 @@ export function selectColumn<T extends RowData>(): DataColumn<T> {
 	return {
 		id: "select",
 		enableHiding: false,
+		enableSorting: false,
 		header: ({ table }) => (
 			<Checkbox
 				aria-label="Select all on this page"

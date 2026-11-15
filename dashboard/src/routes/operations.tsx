@@ -24,6 +24,7 @@ import { keys } from "@/lib/query-keys";
 const workerColumns: DataColumn<WorkerState>[] = [
 	{
 		id: "name",
+		accessorFn: (r) => r.name,
 		header: "Worker",
 		cell: ({ row: { original: worker } }) => (
 			<span className="font-medium">{titleCase(worker.name)}</span>
@@ -31,6 +32,7 @@ const workerColumns: DataColumn<WorkerState>[] = [
 	},
 	{
 		id: "configured",
+		accessorFn: (r) => (r.configured ? "active" : "inactive"),
 		header: "Configured",
 		cell: ({ row: { original: worker } }) => (
 			<StatusBadge status={worker.configured ? "active" : "inactive"} />
@@ -38,6 +40,7 @@ const workerColumns: DataColumn<WorkerState>[] = [
 	},
 	{
 		id: "state",
+		accessorFn: (r) => r.state,
 		header: "State",
 		cell: ({ row: { original: worker } }) => (
 			<StatusBadge status={worker.state} />
@@ -48,6 +51,7 @@ const workerColumns: DataColumn<WorkerState>[] = [
 const healthColumns: DataColumn<ProviderHealthSnapshot>[] = [
 	{
 		id: "account",
+		accessorFn: (r) => r.provider_name || r.provider_account_id,
 		header: "Provider account",
 		cell: ({ row: { original: row } }) => (
 			<Link
@@ -60,11 +64,13 @@ const healthColumns: DataColumn<ProviderHealthSnapshot>[] = [
 	},
 	{
 		id: "status",
+		accessorFn: (r) => r.status,
 		header: "Status",
 		cell: ({ row: { original: row } }) => <StatusBadge status={row.status} />,
 	},
 	{
 		id: "circuit",
+		accessorFn: (r) => r.circuit_state,
 		header: "Circuit",
 		cell: ({ row: { original: row } }) => (
 			<StatusBadge status={row.circuit_state} />
@@ -72,23 +78,27 @@ const healthColumns: DataColumn<ProviderHealthSnapshot>[] = [
 	},
 	{
 		id: "failures",
+		accessorFn: (r) => r.consecutive_failures,
 		header: "Failures",
 		meta: { align: "end" },
 		cell: ({ row: { original: row } }) => row.consecutive_failures,
 	},
 	{
 		id: "latency",
+		accessorFn: (r) => r.latency_ms,
 		header: "Latency",
 		meta: { align: "end" },
 		cell: ({ row: { original: row } }) => `${row.latency_ms} ms`,
 	},
 	{
 		id: "checked",
+		accessorFn: (r) => r.last_checked_at,
 		header: "Last checked",
 		cell: ({ row: { original: row } }) => formatDateTime(row.last_checked_at),
 	},
 	{
 		id: "error",
+		accessorFn: (r) => r.last_error_message,
 		header: "Last error",
 		cell: ({ row: { original: row } }) => row.last_error_message || "—",
 	},
@@ -97,11 +107,13 @@ const healthColumns: DataColumn<ProviderHealthSnapshot>[] = [
 const runtimeColumns: DataColumn<RuntimeProvider>[] = [
 	{
 		id: "code",
+		accessorFn: (r) => r.provider_code,
 		header: "Provider",
 		cell: ({ row: { original: row } }) => <code>{row.provider_code}</code>,
 	},
 	{
 		id: "account",
+		accessorFn: (r) => r.provider_name || r.provider_account_id,
 		header: "Account",
 		cell: ({ row: { original: row } }) => (
 			<Link
@@ -114,6 +126,7 @@ const runtimeColumns: DataColumn<RuntimeProvider>[] = [
 	},
 	{
 		id: "initialized",
+		accessorFn: (r) => (r.initialized ? "active" : "inactive"),
 		header: "Initialized",
 		cell: ({ row: { original: row } }) => (
 			<StatusBadge status={row.initialized ? "active" : "inactive"} />
@@ -121,21 +134,25 @@ const runtimeColumns: DataColumn<RuntimeProvider>[] = [
 	},
 	{
 		id: "version",
+		accessorFn: (r) => r.config_version,
 		header: "Config",
 		cell: ({ row: { original: row } }) => `v${row.config_version}`,
 	},
 	{
 		id: "country",
+		accessorFn: (r) => r.country,
 		header: "Country",
 		cell: ({ row: { original: row } }) => row.country,
 	},
 	{
 		id: "currency",
+		accessorFn: (r) => r.currency,
 		header: "Currency",
 		cell: ({ row: { original: row } }) => row.currency,
 	},
 	{
 		id: "capabilities",
+		accessorFn: (r) => r.capabilities.length,
 		header: "Capabilities",
 		meta: { align: "end" },
 		cell: ({ row: { original: row } }) => row.capabilities.length,
@@ -173,6 +190,7 @@ export function Operations() {
 				</CardHeader>
 				<CardContent>
 					<DataTable
+						tableId="workers"
 						columns={workerColumns}
 						rows={workers.items}
 						rowKey={(worker) => worker.name}
@@ -201,6 +219,7 @@ export function Operations() {
 					</CardHeader>
 					<CardContent>
 						<DataTable
+							tableId="provider-health"
 							columns={healthColumns}
 							rows={health.items}
 							rowKey={(row) => row.provider_account_id}
@@ -230,6 +249,7 @@ export function Operations() {
 					</CardHeader>
 					<CardContent>
 						<DataTable
+							tableId="runtime-providers"
 							columns={runtimeColumns}
 							rows={runtime.items}
 							rowKey={(row) => row.provider_account_id}
