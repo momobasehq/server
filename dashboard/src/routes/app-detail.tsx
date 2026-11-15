@@ -250,6 +250,42 @@ export function AppDetail() {
 		onError: (error: Error) => toast.error(error.message),
 	});
 
+	const [selected, setSelected] = useState<Set<string>>(new Set());
+	const [confirmingBulk, setConfirmingBulk] = useState(false);
+	// Only what is on screen and still active counts, so a stale selection from another
+	// page or an already-revoked row is never acted on.
+	const revocable = paged.items.filter(
+		(credential) =>
+			credential.status === "active" && selected.has(credential.id),
+	);
+
+	// One at a time, stopping at the first failure: the admin rate limiter is per
+	// address, and a burst of parallel calls would trip it for every dashboard user.
+	const revokeMany = useMutation({
+		mutationFn: async (ids: string[]) => {
+			let done = 0;
+			try {
+				for (const id of ids) {
+					await client.apps.revokeCredential(appId, id);
+					done++;
+				}
+			} finally {
+				if (done > 0 && done < ids.length)
+					toast.warning(
+						`Revoked ${done} of ${ids.length} credentials before an error.`,
+					);
+				setSelected(new Set());
+				setConfirmingBulk(false);
+				await refreshCredentials();
+			}
+			return done;
+		},
+		onSuccess: (done) =>
+			toast.success(
+				`Revoked ${done} credential${done === 1 ? "" : "s"}`,
+			),
+	});
+
 	const columns: Column<AppCredential>[] = [
 		{
 			key: "name",
@@ -466,7 +502,21 @@ export function AppDetail() {
 									Client credentials this app uses to obtain
 									access tokens.
 								</CardDescription>
-								<CardAction>
+								<CardAction className="flex gap-2">
+									{revocable.length > 0 && (
+										<GuardedAction
+											permission={
+												AdminPermissions.credentialsUpdate
+											}
+											variant="destructive"
+											size="sm"
+											onClick={() =>
+												setConfirmingBulk(true)
+											}
+										>
+											Revoke {revocable.length}
+										</GuardedAction>
+									)}
 									<GuardedAction
 										permission={
 											AdminPermissions.credentialsCreate
@@ -486,6 +536,17 @@ export function AppDetail() {
 									rowKey={(credential) => credential.id}
 									loading={paged.loading}
 									empty="This app has no credentials yet."
+									selection={
+										can(AdminPermissions.credentialsUpdate)
+											? {
+													selected,
+													onChange: setSelected,
+													selectable: (credential) =>
+														credential.status ===
+														"active",
+												}
+											: undefined
+									}
 								/>
 								<PaginationControls
 									page={paged.page}
@@ -514,6 +575,53 @@ export function AppDetail() {
 					)}
 				</TabsContent>
 			</Tabs>
+
+			<Dialog
+				open={confirmingBulk}
+				onOpenChange={(open) =>
+					!revokeMany.isPending && setConfirmingBulk(open)
+				}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>
+							Revoke {revocable.length} credential
+							{revocable.length === 1 ? "" : "s"}?
+						</DialogTitle>
+						<DialogDescription>
+							Anything signing in with these stops working at once.
+							This cannot be undone.
+						</DialogDescription>
+					</DialogHeader>
+					<ul className="text-muted-foreground list-inside list-disc">
+						{revocable.map((credential) => (
+							<li key={credential.id}>
+								{credential.name || credential.client_id}
+							</li>
+						))}
+					</ul>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => setConfirmingBulk(false)}
+							disabled={revokeMany.isPending}
+						>
+							Cancel
+						</Button>
+						<Button
+							variant="destructive"
+							onClick={() =>
+								revokeMany.mutate(
+									revocable.map((credential) => credential.id),
+								)
+							}
+							disabled={revokeMany.isPending}
+						>
+							{revokeMany.isPending ? "Revoking…" : "Revoke"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 
 			<Dialog open={naming} onOpenChange={setNaming}>
 				<DialogContent>

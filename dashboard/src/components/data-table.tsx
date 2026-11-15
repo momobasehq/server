@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
@@ -35,6 +36,13 @@ interface DataTableProps<T> {
 	onRowClick?: (row: T) => void;
 	/** Column keys to leave out, from useColumnVisibility. */
 	hidden?: ReadonlySet<string>;
+	/** Adds a checkbox column. Keys are rowKey values; the caller owns the set. */
+	selection?: {
+		selected: ReadonlySet<string>;
+		onChange: (next: Set<string>) => void;
+		/** Rows that cannot take the bulk action get a disabled box. */
+		selectable?: (row: T) => boolean;
+	};
 }
 
 /**
@@ -50,10 +58,14 @@ export function DataTable<T>({
 	empty,
 	onRowClick,
 	hidden,
+	selection,
 }: DataTableProps<T>) {
-	const columns = hidden
+	const visible = hidden
 		? allColumns.filter((column) => !hidden.has(column.key))
 		: allColumns;
+	const columns = selection
+		? [selectColumn(rows, rowKey, selection), ...visible]
+		: visible;
 	return (
 		// Wide tables scroll inside their own container rather than the page.
 		<div className="w-full overflow-x-auto">
@@ -142,4 +154,61 @@ export function DataTable<T>({
 			</Table>
 		</div>
 	);
+}
+
+/**
+ * selectColumn builds the checkbox column. The header box covers the current page
+ * only, since rows on other pages are not on screen to be checked.
+ */
+function selectColumn<T>(
+	rows: T[],
+	rowKey: (row: T) => string,
+	{
+		selected,
+		onChange,
+		selectable = () => true,
+	}: NonNullable<DataTableProps<T>["selection"]>,
+): Column<T> {
+	const keys = rows.filter(selectable).map(rowKey);
+	const checked = keys.filter((key) => selected.has(key)).length;
+	const set = (key: string, on: boolean) => {
+		const next = new Set(selected);
+		if (on) next.add(key);
+		else next.delete(key);
+		onChange(next);
+	};
+	return {
+		key: "__select",
+		required: true,
+		header: (
+			<Checkbox
+				aria-label="Select all on this page"
+				checked={keys.length > 0 && checked === keys.length}
+				indeterminate={checked > 0 && checked < keys.length}
+				disabled={keys.length === 0}
+				onCheckedChange={(on) =>
+					onChange(
+						on
+							? new Set([...selected, ...keys])
+							: new Set(
+									[...selected].filter(
+										(key) => !keys.includes(key),
+									),
+								),
+					)
+				}
+			/>
+		),
+		cell: (row) => (
+			<Checkbox
+				aria-label="Select row"
+				checked={selected.has(rowKey(row))}
+				disabled={!selectable(row)}
+				onCheckedChange={(on) => set(rowKey(row), on)}
+				// A checkbox inside a clickable row must not also open the row.
+				onClick={(event) => event.stopPropagation()}
+				onKeyDown={(event) => event.stopPropagation()}
+			/>
+		),
+	};
 }
