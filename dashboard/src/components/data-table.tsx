@@ -20,6 +20,8 @@ export interface Column<T> {
 	cell: (row: T) => ReactNode;
 	/** Right-aligns numeric columns. */
 	align?: "start" | "end";
+	/** Keeps the column out of the visibility toggle, for identifying columns. */
+	required?: boolean;
 }
 
 interface DataTableProps<T> {
@@ -31,6 +33,8 @@ interface DataTableProps<T> {
 	empty?: ReactNode;
 	/** Makes each populated row an accessible action. */
 	onRowClick?: (row: T) => void;
+	/** Column keys to leave out, from useColumnVisibility. */
+	hidden?: ReadonlySet<string>;
 }
 
 /**
@@ -39,13 +43,17 @@ interface DataTableProps<T> {
  * screen's tables stay identical without a shared abstraction to maintain.
  */
 export function DataTable<T>({
-	columns,
+	columns: allColumns,
 	rows,
 	rowKey,
 	loading,
 	empty,
 	onRowClick,
+	hidden,
 }: DataTableProps<T>) {
+	const columns = hidden
+		? allColumns.filter((column) => !hidden.has(column.key))
+		: allColumns;
 	return (
 		// Wide tables scroll inside their own container rather than the page.
 		<div className="w-full overflow-x-auto">

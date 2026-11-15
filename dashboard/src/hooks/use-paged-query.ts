@@ -6,6 +6,16 @@ import type { Page } from "@/lib/query-keys";
 
 const defaultPerPage = 20;
 
+export interface PagedQueryOptions {
+	/** Initial page size; the viewer can change it through PaginationControls. */
+	perPage?: number;
+	/** When false the query never runs, so a section the caller has hidden for want of a
+	 * permission does not fire a request that is certain to 403 and toast. */
+	enabled?: boolean;
+	/** Polls the current page every this many milliseconds; false or omitted never polls. */
+	refetchInterval?: number | false;
+}
+
 /**
  * usePagedQuery wires a list endpoint to page state.
  *
@@ -16,24 +26,33 @@ const defaultPerPage = 20;
 export function usePagedQuery<T>(
 	queryKey: (page: Page) => readonly unknown[],
 	fetcher: (page: Page) => Promise<PaginatedData<T>>,
-	perPage = defaultPerPage,
-	/** When false the query never runs, so a section the caller has hidden for want of a
-	 * permission does not fire a request that is certain to 403 and toast. */
-	enabled = true,
+	{
+		perPage: initialPerPage = defaultPerPage,
+		enabled = true,
+		refetchInterval = false,
+	}: PagedQueryOptions = {},
 ) {
 	const [page, setPage] = useState(1);
+	const [perPage, setPerPageState] = useState(initialPerPage);
 	const slice: Page = { page, perPage };
 	const query = useQuery({
 		queryKey: queryKey(slice),
 		queryFn: () => fetcher(slice),
 		placeholderData: keepPreviousData,
 		enabled,
+		refetchInterval,
 	});
+	// The old page number can point past the end at a larger size, so start over.
+	const setPerPage = (size: number) => {
+		setPerPageState(size);
+		setPage(1);
+	};
 
 	return {
 		page,
 		perPage,
 		setPage,
+		setPerPage,
 		items: query.data?.items ?? [],
 		total: query.data?.total ?? 0,
 		count: query.data?.count ?? 0,

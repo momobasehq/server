@@ -288,6 +288,7 @@ export function Apps() {
 					total={paged.total}
 					count={paged.count}
 					onPageChange={paged.setPage}
+					onPerPageChange={paged.setPerPage}
 					busy={paged.fetching}
 				/>
 			</CardContent>

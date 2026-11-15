@@ -480,8 +480,7 @@ export function Providers() {
 	const balances = usePagedQuery(
 		keys.providers.balances,
 		(page) => client.providers.activeBalances(page),
-		20,
-		showBalances,
+		{ enabled: showBalances },
 	);
 	const [creating, setCreating] = useState(false);
 	const [configuring, setConfiguring] = useState<ProviderAccount>();
@@ -638,6 +637,7 @@ export function Providers() {
 						total={paged.total}
 						count={paged.count}
 						onPageChange={paged.setPage}
+						onPerPageChange={paged.setPerPage}
 						busy={paged.fetching}
 					/>
 				</CardContent>
@@ -719,6 +719,7 @@ export function Providers() {
 							total={balances.total}
 							count={balances.count}
 							onPageChange={balances.setPage}
+							onPerPageChange={balances.setPerPage}
 							busy={balances.fetching}
 						/>
 					</CardContent>

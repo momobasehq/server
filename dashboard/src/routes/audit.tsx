@@ -1,5 +1,6 @@
 import { DataTable, type Column } from "@/components/data-table";
 import { PaginationControls } from "@/components/pagination-controls";
+import { ActionBadge } from "@/components/status-badge";
 import {
 	Card,
 	CardContent,
@@ -35,7 +36,7 @@ const columns: Column<AuditLog>[] = [
 	{
 		key: "action",
 		header: "Action",
-		cell: (log) => <code className="font-medium">{log.action}</code>,
+		cell: (log) => <ActionBadge action={log.action} />,
 	},
 	{
 		key: "entity",
@@ -92,6 +93,7 @@ export function Audit() {
 					total={paged.total}
 					count={paged.count}
 					onPageChange={paged.setPage}
+					onPerPageChange={paged.setPerPage}
 					busy={paged.fetching}
 				/>
 			</CardContent>

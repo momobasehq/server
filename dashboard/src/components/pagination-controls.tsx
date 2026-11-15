@@ -1,6 +1,15 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+
+const pageSizes = [10, 20, 50, 100];
 
 interface PaginationControlsProps {
 	page: number;
@@ -10,6 +19,8 @@ interface PaginationControlsProps {
 	/** Rows on the current page, used to detect the last page. */
 	count: number;
 	onPageChange: (page: number) => void;
+	/** Shows a page-size picker when set. */
+	onPerPageChange?: (perPage: number) => void;
 	busy?: boolean;
 }
 
@@ -23,6 +34,7 @@ export function PaginationControls({
 	total,
 	count,
 	onPageChange,
+	onPerPageChange,
 	busy,
 }: PaginationControlsProps) {
 	const first = total === 0 ? 0 : (page - 1) * perPage + 1;
@@ -30,11 +42,30 @@ export function PaginationControls({
 	const hasNext = last < total;
 
 	return (
-		<div className="flex items-center justify-between gap-4 pt-2">
+		<div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pt-2">
 			<p className="text-muted-foreground text-xs" aria-live="polite">
 				{total === 0 ? "No results" : `${first}–${last} of ${total}`}
 			</p>
 			<div className="flex items-center gap-2">
+				{onPerPageChange && (
+					<Select
+						value={String(perPage)}
+						onValueChange={(value) =>
+							value && onPerPageChange(Number(value))
+						}
+					>
+						<SelectTrigger size="sm" aria-label="Rows per page">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							{pageSizes.map((size) => (
+								<SelectItem key={size} value={String(size)}>
+									{size} / page
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				)}
 				<Button
 					variant="outline"
 					size="sm"

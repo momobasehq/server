@@ -187,8 +187,7 @@ export function AppDetail() {
 	const paged = usePagedQuery(
 		(page) => keys.apps.credentials(appId, page),
 		(page) => client.apps.credentials(appId, page),
-		20,
-		showCredentials && Boolean(appId),
+		{ enabled: showCredentials && Boolean(appId) },
 	);
 
 	async function refreshCredentials() {
@@ -493,6 +492,7 @@ export function AppDetail() {
 									total={paged.total}
 									count={paged.count}
 									onPageChange={paged.setPage}
+									onPerPageChange={paged.setPerPage}
 									busy={paged.fetching}
 								/>
 							</CardContent>

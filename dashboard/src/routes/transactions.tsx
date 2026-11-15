@@ -1,11 +1,15 @@
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router";
+import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 
+import { ColumnToggle, useColumnVisibility } from "@/components/column-toggle";
 import { DataTable, type Column } from "@/components/data-table";
 import { PaginationControls } from "@/components/pagination-controls";
 import { StatusBadge } from "@/components/status-badge";
+import { Timestamp } from "@/components/timestamp";
 import {
 	Card,
+	CardAction,
 	CardContent,
 	CardDescription,
 	CardHeader,
@@ -18,27 +22,56 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth";
 import { usePagedQuery } from "@/hooks/use-paged-query";
 import {
 	formatAmount,
 	formatDateTime,
-	formatRelative,
 	titleCase,
 } from "@/lib/format";
 import { keys } from "@/lib/query-keys";
-import type { AdminTransaction } from "momobase";
+import type { AdminTransaction, ServiceType } from "momobase";
+
+/** Polling cadence while live updates are on: fresh enough to watch a payment settle. */
+const liveInterval = 5_000;
+
+/** Service shows money's direction, in the same hues the overview charts use. */
+function Service({ type }: { type: ServiceType }) {
+	const Icon = type === "collection" ? ArrowDownLeft : ArrowUpRight;
+	return (
+		<span className="inline-flex items-center gap-1.5">
+			<Icon
+				aria-hidden
+				className={
+					type === "collection"
+						? "text-chart-1 size-4"
+						: "text-chart-2 size-4"
+				}
+			/>
+			{titleCase(type)}
+		</span>
+	);
+}
+
+/** signedAmount prefixes money in with + and money out with −. */
+function signedAmount(tx: AdminTransaction) {
+	const sign = tx.service_type === "collection" ? "+" : "−";
+	return `${sign}${formatAmount(tx.amount, tx.currency)}`;
+}
 
 const columns: Column<AdminTransaction>[] = [
 	{
 		key: "reference",
 		header: "Reference",
+		required: true,
 		cell: (tx) => <span className="font-medium">{tx.reference}</span>,
 	},
 	{
 		key: "service",
 		header: "Service",
-		cell: (tx) => titleCase(tx.service_type),
+		cell: (tx) => <Service type={tx.service_type} />,
 	},
 	// Payment methods are free-form strings matched against routes, so this column
 	// shows whatever the integrator sent rather than a known set of rails.
@@ -51,7 +84,9 @@ const columns: Column<AdminTransaction>[] = [
 		key: "amount",
 		header: "Amount",
 		align: "end",
-		cell: (tx) => formatAmount(tx.amount, tx.currency),
+		cell: (tx) => (
+			<span className="tabular-nums">{signedAmount(tx)}</span>
+		),
 	},
 	{
 		key: "provider_fee",
@@ -79,17 +114,21 @@ const columns: Column<AdminTransaction>[] = [
 	{
 		key: "created",
 		header: "Created",
-		cell: (tx) => formatRelative(tx.created_at),
+		cell: (tx) => <Timestamp value={tx.created_at} />,
 	},
 ];
 
 /** Transactions lists every payment the engine has recorded. */
 export function Transactions() {
 	const { client } = useAuth();
-	const paged = usePagedQuery(keys.transactions.list, (page) =>
-		client.transactions.list(page),
+	const [live, setLive] = useState(false);
+	const paged = usePagedQuery(
+		keys.transactions.list,
+		(page) => client.transactions.list(page),
+		{ refetchInterval: live && liveInterval },
 	);
 	const [selected, setSelected] = useState<AdminTransaction>();
+	const visibility = useColumnVisibility("transactions");
 
 	return (
 		<Card>
@@ -98,6 +137,21 @@ export function Transactions() {
 				<CardDescription>
 					Collections and disbursements across every app.
 				</CardDescription>
+				<CardAction className="flex items-center gap-4">
+					<div className="flex items-center gap-2">
+						<Switch
+							id="transactions-live"
+							checked={live}
+							onCheckedChange={setLive}
+						/>
+						<Label htmlFor="transactions-live">Live</Label>
+					</div>
+					<ColumnToggle
+						columns={columns}
+						hidden={visibility.hidden}
+						onToggle={visibility.toggle}
+					/>
+				</CardAction>
 			</CardHeader>
 			<CardContent>
 				<DataTable
@@ -107,6 +161,7 @@ export function Transactions() {
 					loading={paged.loading}
 					empty="No payments have been created yet."
 					onRowClick={setSelected}
+					hidden={visibility.hidden}
 				/>
 				<PaginationControls
 					page={paged.page}
@@ -114,6 +169,7 @@ export function Transactions() {
 					total={paged.total}
 					count={paged.count}
 					onPageChange={paged.setPage}
+					onPerPageChange={paged.setPerPage}
 					busy={paged.fetching}
 				/>
 			</CardContent>
@@ -154,7 +210,7 @@ function TransactionDialog({
 							<StatusBadge status={transaction.status} />
 						</Detail>
 						<Detail label="Service">
-							{titleCase(transaction.service_type)}
+							<Service type={transaction.service_type} />
 						</Detail>
 						<Detail label="Payment method">
 							<code>{transaction.payment_method}</code>
