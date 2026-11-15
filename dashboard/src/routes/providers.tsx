@@ -481,7 +481,7 @@ export function Providers() {
 	const balances = usePagedQuery(
 		keys.providers.balances,
 		(page) => client.providers.activeBalances(page),
-		{ enabled: showBalances },
+		{ enabled: showBalances, param: "balances" },
 	);
 	const [creating, setCreating] = useState(false);
 	const [configuring, setConfiguring] = useState<ProviderAccount>();

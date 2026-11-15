@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "react-router";
 import type { PaginatedData } from "momobase";
 
 import type { Page } from "@/lib/query-keys";
@@ -14,6 +14,18 @@ export interface PagedQueryOptions {
 	enabled?: boolean;
 	/** Polls the current page every this many milliseconds; false or omitted never polls. */
 	refetchInterval?: number | false;
+	/** Prefixes this table's URL params, so a screen with several tables keeps each
+	 * one's place apart. The screen's main table leaves it unset. */
+	param?: string;
+}
+
+/** Caps a hand-edited URL so it cannot ask the API for an unbounded page. */
+const maxPerPage = 100;
+
+/** readInt parses a positive integer search param, or returns undefined. */
+function readInt(value: string | null) {
+	const parsed = Number(value);
+	return Number.isInteger(parsed) && parsed >= 1 ? parsed : undefined;
 }
 
 /**
@@ -30,10 +42,36 @@ export function usePagedQuery<T>(
 		perPage: initialPerPage = defaultPerPage,
 		enabled = true,
 		refetchInterval = false,
+		param,
 	}: PagedQueryOptions = {},
 ) {
-	const [page, setPage] = useState(1);
-	const [perPage, setPerPageState] = useState(initialPerPage);
+	// Page state lives in the URL so a reload or a shared link keeps the viewer's place.
+	// Defaults are left out of it, so an untouched table keeps a clean URL.
+	const [params, setParams] = useSearchParams();
+	const pageParam = param ? `${param}_page` : "page";
+	const perPageParam = param ? `${param}_per_page` : "per_page";
+	const page = readInt(params.get(pageParam)) ?? 1;
+	const perPage = Math.min(
+		readInt(params.get(perPageParam)) ?? initialPerPage,
+		maxPerPage,
+	);
+	const update = (next: { page?: number; perPage?: number }) =>
+		setParams(
+			(current) => {
+				const updated = new URLSearchParams(current);
+				const write = (name: string, value: number, fallback: number) =>
+					value === fallback
+						? updated.delete(name)
+						: updated.set(name, String(value));
+				if (next.page !== undefined) write(pageParam, next.page, 1);
+				if (next.perPage !== undefined)
+					write(perPageParam, next.perPage, initialPerPage);
+				return updated;
+			},
+			// Paging is browsing, not navigation: Back should leave the screen.
+			{ replace: true },
+		);
+	const setPage = (value: number) => update({ page: value });
 	const slice: Page = { page, perPage };
 	const query = useQuery({
 		queryKey: queryKey(slice),
@@ -43,10 +81,7 @@ export function usePagedQuery<T>(
 		refetchInterval,
 	});
 	// The old page number can point past the end at a larger size, so start over.
-	const setPerPage = (size: number) => {
-		setPerPageState(size);
-		setPage(1);
-	};
+	const setPerPage = (size: number) => update({ perPage: size, page: 1 });
 
 	return {
 		page,

@@ -142,12 +142,12 @@ export function Operations() {
 	const health = usePagedQuery(
 		keys.providers.health,
 		(page) => client.providers.health(page),
-		{ enabled: showProviders },
+		{ enabled: showProviders, param: "health" },
 	);
 	const runtime = usePagedQuery(
 		keys.system.runtime,
 		(page) => client.system.runtimeProviders(page),
-		{ enabled: showProviders },
+		{ enabled: showProviders, param: "runtime" },
 	);
 
 	return (
