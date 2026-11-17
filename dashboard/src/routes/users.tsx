@@ -2,7 +2,15 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AdminPermissions, type AdminUser } from "momobase";
+import {
+	AdminPermissions,
+	type AdminUser,
+	type AdminUserListQuery,
+} from "momobase";
+
+const userFacets = [
+	{ field: "status", label: "Status", options: ["active", "inactive"] },
+] as const;
 
 import { DataTable, type DataColumn } from "@/components/data-table";
 import { GuardedAction } from "@/components/guarded-action";
@@ -175,8 +183,10 @@ function CreateUserDialog({
 export function Users() {
 	const { client, me } = useAuth();
 	const queryClient = useQueryClient();
-	const paged = usePagedQuery(keys.users.list, (page) =>
-		client.users.list(page),
+	const paged = usePagedQuery(
+		keys.users.list,
+		(query: AdminUserListQuery) => client.users.list(query),
+		{ filters: userFacets.map((facet) => facet.field) },
 	);
 	const [creating, setCreating] = useState(false);
 	const [resetting, setResetting] = useState<AdminUser>();
@@ -235,6 +245,7 @@ export function Users() {
 			id: "name",
 			accessorFn: (r) => r.name,
 			header: "Name",
+			meta: { sortKey: "name" },
 			cell: ({ row: { original: user } }) => (
 				<span className="font-medium">{user.name}</span>
 			),
@@ -243,6 +254,7 @@ export function Users() {
 			id: "email",
 			accessorFn: (r) => r.email,
 			header: "Email",
+			meta: { sortKey: "email" },
 			cell: ({ row: { original: user } }) => user.email,
 		},
 		{
@@ -263,6 +275,7 @@ export function Users() {
 			id: "created",
 			accessorFn: (r) => r.created_at,
 			header: "Created",
+			meta: { sortKey: "created_at" },
 			cell: ({ row: { original: user } }) => formatDateTime(user.created_at),
 		},
 		rowActionsColumn<AdminUser>((user) => [
@@ -318,6 +331,9 @@ export function Users() {
 			<CardContent>
 				<DataTable
 					tableId="users"
+					list={paged.list}
+					facets={userFacets}
+					searchPlaceholder="Search name or email…"
 					columns={columns}
 					rows={paged.items}
 					rowKey={(user) => user.id}

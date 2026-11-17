@@ -7,8 +7,14 @@ import {
 	AdminPermissions,
 	type PaymentMethod,
 	type PaymentRoute,
+	type PaymentRouteListQuery,
 	type ServiceType,
 } from "momobase";
+
+const routeFacets = [
+	{ field: "serviceType", label: "Service", options: ["collection", "disbursement"] },
+	{ field: "paymentMethod", label: "Method", options: paymentMethods },
+] as const;
 
 import { DataTable, type DataColumn } from "@/components/data-table";
 import { GuardedAction } from "@/components/guarded-action";
@@ -43,6 +49,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import { usePagedQuery } from "@/hooks/use-paged-query";
+import { paymentMethods } from "@/lib/payment-methods";
 import { keys } from "@/lib/query-keys";
 import { titleCase } from "@/lib/format";
 
@@ -238,8 +245,10 @@ function CreateRouteDialog({
 export function PaymentRoutes() {
 	const { client } = useAuth();
 	const queryClient = useQueryClient();
-	const paged = usePagedQuery(keys.routes.list, (page) =>
-		client.routes.list(page),
+	const paged = usePagedQuery(
+		keys.routes.list,
+		(query: PaymentRouteListQuery) => client.routes.list(query),
+		{ filters: routeFacets.map((facet) => facet.field) },
 	);
 	const [creating, setCreating] = useState(false);
 
@@ -292,7 +301,7 @@ export function PaymentRoutes() {
 			id: "priority",
 			accessorFn: (r) => r.priority,
 			header: "Priority",
-			meta: { align: "end" },
+			meta: { align: "end", sortKey: "priority" },
 			cell: ({ row: { original: route } }) => route.priority,
 		},
 		{
@@ -340,6 +349,9 @@ export function PaymentRoutes() {
 			<CardContent>
 				<DataTable
 					tableId="routes"
+					list={paged.list}
+					facets={routeFacets}
+					searchPlaceholder="Search method or provider account…"
 					columns={columns}
 					rows={paged.items}
 					rowKey={(route) => route.id}

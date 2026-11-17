@@ -10,10 +10,16 @@ import {
 } from "@/components/ui/card";
 import {
 	AdminPermissions,
+	type ProviderHealthListQuery,
 	type ProviderHealthSnapshot,
 	type RuntimeProvider,
 	type WorkerState,
 } from "momobase";
+
+const healthFacets = [
+	{ field: "status", label: "Status", options: ["healthy", "degraded", "down", "unknown", "disabled"] },
+	{ field: "circuitState", label: "Circuit", options: ["closed", "half_open", "open"] },
+] as const;
 import { Link } from "react-router";
 
 import { useAuth } from "@/hooks/use-auth";
@@ -80,14 +86,14 @@ const healthColumns: DataColumn<ProviderHealthSnapshot>[] = [
 		id: "failures",
 		accessorFn: (r) => r.consecutive_failures,
 		header: "Failures",
-		meta: { align: "end" },
+		meta: { align: "end", sortKey: "consecutive_failures" },
 		cell: ({ row: { original: row } }) => row.consecutive_failures,
 	},
 	{
 		id: "latency",
 		accessorFn: (r) => r.latency_ms,
 		header: "Latency",
-		meta: { align: "end" },
+		meta: { align: "end", sortKey: "latency_ms" },
 		cell: ({ row: { original: row } }) => `${row.latency_ms} ms`,
 	},
 	{
@@ -170,8 +176,12 @@ export function Operations() {
 	);
 	const health = usePagedQuery(
 		keys.providers.health,
-		(page) => client.providers.health(page),
-		{ enabled: showProviders, param: "health" },
+		(query: ProviderHealthListQuery) => client.providers.health(query),
+		{
+			enabled: showProviders,
+			param: "health",
+			filters: healthFacets.map((facet) => facet.field),
+		},
 	);
 	const runtime = usePagedQuery(
 		keys.system.runtime,
@@ -220,6 +230,9 @@ export function Operations() {
 					<CardContent>
 						<DataTable
 							tableId="provider-health"
+							list={health.list}
+							facets={healthFacets}
+							searchPlaceholder="Search account or error…"
 							columns={healthColumns}
 							rows={health.items}
 							rowKey={(row) => row.provider_account_id}
