@@ -1,6 +1,5 @@
-import { useMemo, useState, type ReactNode } from "react";
-import { Link, useSearchParams } from "react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { Navigate, useNavigate, useSearchParams } from "react-router";
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { toast } from "sonner";
 
@@ -17,22 +16,11 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth";
 import { usePagedQuery } from "@/hooks/use-paged-query";
-import {
-	formatAmount,
-	formatDateTime,
-	titleCase,
-} from "@/lib/format";
+import { formatAmount, titleCase } from "@/lib/format";
 import { paymentMethods } from "@/lib/payment-methods";
 import { keys } from "@/lib/query-keys";
 import type {
@@ -64,14 +52,14 @@ const facets = [
 
 /** transactionLink is a shareable URL that opens one transaction's details. */
 function transactionLink(id: string) {
-	return `${window.location.origin}${window.location.pathname}#/transactions?tx=${encodeURIComponent(id)}`;
+	return `${window.location.origin}${window.location.pathname}#/transactions/${encodeURIComponent(id)}`;
 }
 
 /** Polling cadence while live updates are on: fresh enough to watch a payment settle. */
 const liveInterval = 5_000;
 
 /** Service shows money's direction, in the same hues the overview charts use. */
-function Service({ type }: { type: ServiceType }) {
+export function Service({ type }: { type: ServiceType }) {
 	const Icon = type === "collection" ? ArrowDownLeft : ArrowUpRight;
 	return (
 		<span className="inline-flex items-center gap-1.5">
@@ -186,24 +174,14 @@ export function Transactions() {
 		},
 	);
 
-	// The open transaction lives in the URL, so a copied link reopens it. A row on the
-	// current page opens at once; any other is fetched by ID.
-	const [params, setParams] = useSearchParams();
-	const selectedId = params.get("tx") ?? undefined;
-	const onPage = paged.items.find((tx) => tx.id === selectedId);
-	const fetched = useQuery({
-		queryKey: keys.transactions.detail(selectedId ?? ""),
-		queryFn: () => client.transactions.get(selectedId ?? ""),
-		enabled: Boolean(selectedId) && !onPage,
-	});
-	const selected = onPage ?? fetched.data;
-	const select = (tx?: AdminTransaction) =>
-		setParams((current) => {
-			const next = new URLSearchParams(current);
-			if (tx) next.set("tx", tx.id);
-			else next.delete("tx");
-			return next;
-		});
+	// Details open on their own page. The row travels as route state so the page can
+	// render it at once instead of refetching what the table already holds.
+	const navigate = useNavigate();
+	const select = (tx: AdminTransaction) =>
+		void navigate(`/transactions/${encodeURIComponent(tx.id)}`, { state: tx });
+	// Links copied before details became a page used ?tx=, so they still resolve.
+	const [params] = useSearchParams();
+	const legacyId = params.get("tx");
 
 	const withActions = useMemo(
 		() => [
@@ -219,9 +197,14 @@ export function Transactions() {
 				},
 			]),
 		],
-		// select only writes the URL, so the columns never need rebuilding for it.
+		// select only navigates, so the columns never need rebuilding for it.
 		[],
 	);
+
+	if (legacyId)
+		return (
+			<Navigate to={`/transactions/${encodeURIComponent(legacyId)}`} replace />
+		);
 
 	return (
 		<Card>
@@ -263,162 +246,6 @@ export function Transactions() {
 					busy={paged.fetching}
 				/>
 			</CardContent>
-			<TransactionDialog
-				open={Boolean(selectedId)}
-				transaction={selected}
-				onClose={() => select(undefined)}
-			/>
 		</Card>
-	);
-}
-
-function TransactionDialog({
-	open,
-	transaction,
-	onClose,
-}: {
-	/** Open while the URL names a transaction, even before it has loaded. */
-	open: boolean;
-	transaction?: AdminTransaction;
-	onClose: () => void;
-}) {
-	return (
-		<Dialog
-			open={open}
-			onOpenChange={(open) => !open && onClose()}
-		>
-			<DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-3xl">
-				<DialogHeader>
-					<DialogTitle>
-						{transaction?.reference ?? "Transaction details"}
-					</DialogTitle>
-					<DialogDescription>
-						Complete values captured on the transaction record. Fees
-						are the immutable amounts computed when it was created.
-					</DialogDescription>
-				</DialogHeader>
-
-				{transaction && (
-					<div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-						<Detail label="Status">
-							<StatusBadge status={transaction.status} />
-						</Detail>
-						<Detail label="Service">
-							<Service type={transaction.service_type} />
-						</Detail>
-						<Detail label="Payment method">
-							<code>{transaction.payment_method}</code>
-						</Detail>
-						<Detail label="Amount">
-							{formatAmount(
-								transaction.amount,
-								transaction.currency,
-							)}
-						</Detail>
-						<Detail label="Provider fee">
-							{formatAmount(
-								transaction.provider_fee,
-								transaction.currency,
-							)}
-						</Detail>
-						<Detail label="Platform fee">
-							{formatAmount(
-								transaction.platform_fee,
-								transaction.currency,
-							)}
-						</Detail>
-						<Detail label="Currency">
-							<code>{transaction.currency}</code>
-						</Detail>
-						<Detail label="Country">
-							<code>{transaction.country || "—"}</code>
-						</Detail>
-						<Detail label="Reference">
-							<code className="break-all">
-								{transaction.reference}
-							</code>
-						</Detail>
-						<Detail label="Transaction ID">
-							<code className="break-all">{transaction.id}</code>
-						</Detail>
-						<Detail label="App ID">
-							<code className="break-all">
-								{transaction.app_id}
-							</code>
-						</Detail>
-						<Detail label="Idempotency key">
-							<code className="break-all">
-								{transaction.idempotency_key}
-							</code>
-						</Detail>
-						<Detail label="Selected route">
-							<code className="break-all">
-								{transaction.selected_route_id || "—"}
-							</code>
-						</Detail>
-						<Detail label="Provider account">
-							{transaction.selected_provider_account_id ? (
-								<Link
-									className="break-all font-mono underline-offset-4 hover:underline"
-									to={`/providers/${transaction.selected_provider_account_id}`}
-									onClick={onClose}
-								>
-									{transaction.selected_provider_account_id}
-								</Link>
-							) : (
-								"—"
-							)}
-						</Detail>
-						<Detail label="Provider reference">
-							<code className="break-all">
-								{transaction.provider_reference || "—"}
-							</code>
-						</Detail>
-						<Detail label="Customer account">
-							<code className="break-all">
-								{transaction.customer_account || "—"}
-							</code>
-						</Detail>
-						<Detail label="Customer name">
-							{transaction.customer_name || "—"}
-						</Detail>
-						<Detail label="Customer email">
-							<span className="break-all">
-								{transaction.customer_email || "—"}
-							</span>
-						</Detail>
-						<Detail label="Description">
-							<span className="whitespace-pre-wrap">
-								{transaction.description || "—"}
-							</span>
-						</Detail>
-						<Detail label="Reconciliation attempts">
-							{transaction.reconciliation_attempts}
-						</Detail>
-						<Detail label="Last reconciled">
-							{formatDateTime(transaction.last_reconciled_at)}
-						</Detail>
-						<Detail label="Next reconciliation">
-							{formatDateTime(transaction.next_reconcile_at)}
-						</Detail>
-						<Detail label="Created">
-							{formatDateTime(transaction.created_at)}
-						</Detail>
-						<Detail label="Last updated">
-							{formatDateTime(transaction.updated_at)}
-						</Detail>
-					</div>
-				)}
-			</DialogContent>
-		</Dialog>
-	);
-}
-
-function Detail({ label, children }: { label: string; children: ReactNode }) {
-	return (
-		<div className="min-w-0">
-			<p className="text-muted-foreground">{label}</p>
-			<div className="mt-1">{children}</div>
-		</div>
 	);
 }
