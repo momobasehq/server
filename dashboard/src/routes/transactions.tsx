@@ -33,13 +33,13 @@ import {
 	formatDateTime,
 	titleCase,
 } from "@/lib/format";
+import { paymentMethods } from "@/lib/payment-methods";
 import { keys } from "@/lib/query-keys";
-import {
-	PaymentMethods,
-	type AdminTransaction,
-	type ServiceType,
-	type TransactionListQuery,
-	type TransactionStatus,
+import type {
+	AdminTransaction,
+	ServiceType,
+	TransactionListQuery,
+	TransactionStatus,
 } from "momobase";
 
 const statuses = [
@@ -59,7 +59,7 @@ const facets = [
 		label: "Service",
 		options: ["collection", "disbursement"],
 	},
-	{ field: "paymentMethod", label: "Method", options: PaymentMethods },
+	{ field: "paymentMethod", label: "Method", options: paymentMethods },
 ] as const;
 
 /** transactionLink is a shareable URL that opens one transaction's details. */

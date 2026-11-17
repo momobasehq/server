@@ -5,7 +5,6 @@ import { Link } from "react-router";
 import { toast } from "sonner";
 import {
 	AdminPermissions,
-	PaymentMethods,
 	type PaymentMethod,
 	type PaymentRoute,
 	type PaymentRouteListQuery,
@@ -14,7 +13,7 @@ import {
 
 const routeFacets = [
 	{ field: "serviceType", label: "Service", options: ["collection", "disbursement"] },
-	{ field: "paymentMethod", label: "Method", options: PaymentMethods },
+	{ field: "paymentMethod", label: "Method", options: paymentMethods },
 ] as const;
 
 import { DataTable, type DataColumn } from "@/components/data-table";
@@ -50,6 +49,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import { usePagedQuery } from "@/hooks/use-paged-query";
+import { paymentMethods } from "@/lib/payment-methods";
 import { keys } from "@/lib/query-keys";
 import { titleCase } from "@/lib/format";
 
