@@ -1,3 +1,5 @@
+import type { ChargeRule } from "momobase";
+
 /** Currencies whose minor unit is the major unit — amounts are never scaled. */
 const zeroDecimal = new Set([
 	"BIF",
@@ -43,6 +45,15 @@ export function formatAmount(minor: number, currency: string) {
 		// An unrecognized code is still worth showing; only the symbol is unavailable.
 		return `${value.toFixed(digits)} ${currency}`;
 	}
+}
+
+/** formatCharge renders a fee rule as its flat and percentage parts, e.g. "UGX 500 + 3%". */
+export function formatCharge(rule: ChargeRule | undefined, currency: string) {
+	if (!rule) return "—";
+	const parts: string[] = [];
+	if (rule.flat > 0) parts.push(formatAmount(rule.flat, currency));
+	if (rule.percentage > 0) parts.push(`${rule.percentage / 100}%`);
+	return parts.length > 0 ? parts.join(" + ") : "No fee";
 }
 
 /** formatDateTime renders an API timestamp in the viewer's locale and zone. */
