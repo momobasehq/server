@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router";
 import { toast } from "sonner";
 import {
 	AdminPermissions,
@@ -48,137 +49,6 @@ import { usePagedQuery } from "@/hooks/use-paged-query";
 import { formatDateTime, titleCase } from "@/lib/format";
 import { keys } from "@/lib/query-keys";
 
-/** CreateUserDialog collects a new administrator. */
-function CreateUserDialog({
-	open,
-	onOpenChange,
-}: {
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
-}) {
-	const { client } = useAuth();
-	const queryClient = useQueryClient();
-	const [form, setForm] = useState({
-		name: "",
-		email: "",
-		password: "",
-		role: "",
-	});
-	// Roles come from the server, so a role an operator created is assignable here
-	// without a client release. The old hardcoded list also offered read_only, which
-	// the API rejected.
-	const roles = useQuery({
-		queryKey: keys.authz.roles(),
-		queryFn: () => client.authz.roles(),
-	});
-
-	const create = useMutation({
-		mutationFn: () => client.users.create(form),
-		onSuccess: async (user) => {
-			toast.success(`Created ${user.email}`);
-			onOpenChange(false);
-			setForm({ name: "", email: "", password: "", role: "" });
-			await queryClient.invalidateQueries({ queryKey: keys.users.all });
-		},
-		onError: (error: Error) => toast.error(error.message),
-	});
-
-	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent>
-				<DialogHeader>
-					<DialogTitle>New administrator</DialogTitle>
-					<DialogDescription>
-						The password is set once here and can be changed later.
-					</DialogDescription>
-				</DialogHeader>
-				<div className="flex flex-col gap-3">
-					<div className="flex flex-col gap-2">
-						<Label htmlFor="user-name">Name</Label>
-						<Input
-							id="user-name"
-							value={form.name}
-							onChange={(e) =>
-								setForm({ ...form, name: e.target.value })
-							}
-						/>
-					</div>
-					<div className="flex flex-col gap-2">
-						<Label htmlFor="user-email">Email</Label>
-						<Input
-							id="user-email"
-							type="email"
-							value={form.email}
-							onChange={(e) =>
-								setForm({ ...form, email: e.target.value })
-							}
-						/>
-					</div>
-					<div className="flex flex-col gap-2">
-						<Label htmlFor="user-password">Password</Label>
-						<Input
-							id="user-password"
-							type="password"
-							value={form.password}
-							onChange={(e) =>
-								setForm({ ...form, password: e.target.value })
-							}
-						/>
-					</div>
-					<div className="flex flex-col gap-2">
-						<Label htmlFor="user-role">Role</Label>
-						<Select
-							value={form.role}
-							onValueChange={(role) =>
-								setForm({ ...form, role: role ?? "" })
-							}
-						>
-							<SelectTrigger id="user-role">
-								<SelectValue
-									placeholder={
-										roles.isPending
-											? "Loading…"
-											: "Select a role"
-									}
-								/>
-							</SelectTrigger>
-							<SelectContent>
-								{(roles.data?.items ?? []).map((role) => (
-									<SelectItem
-										key={role.name}
-										value={role.name}
-									>
-										{titleCase(role.name)}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
-				</div>
-				<DialogFooter>
-					<Button
-						variant="outline"
-						onClick={() => onOpenChange(false)}
-					>
-						Cancel
-					</Button>
-					<Button
-						onClick={() => create.mutate()}
-						disabled={
-							create.isPending ||
-							!form.email ||
-							!form.password ||
-							!form.role
-						}
-					>
-						Create
-					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
-	);
-}
-
 /** Users manages administrator accounts and their status. */
 export function Users() {
 	const { client, me } = useAuth();
@@ -188,7 +58,6 @@ export function Users() {
 		(query: AdminUserListQuery) => client.users.list(query),
 		{ filters: userFacets.map((facet) => facet.field) },
 	);
-	const [creating, setCreating] = useState(false);
 	const [resetting, setResetting] = useState<AdminUser>();
 	const [newPassword, setNewPassword] = useState("");
 	const [reassigning, setReassigning] = useState<AdminUser>();
@@ -276,7 +145,8 @@ export function Users() {
 			accessorFn: (r) => r.created_at,
 			header: "Created",
 			meta: { sortKey: "created_at" },
-			cell: ({ row: { original: user } }) => formatDateTime(user.created_at),
+			cell: ({ row: { original: user } }) =>
+				formatDateTime(user.created_at),
 		},
 		rowActionsColumn<AdminUser>((user) => [
 			{
@@ -303,7 +173,8 @@ export function Users() {
 				onSelect: () =>
 					changeStatus.mutate({
 						id: user.id,
-						status: user.status === "active" ? "inactive" : "active",
+						status:
+							user.status === "active" ? "inactive" : "active",
 					}),
 			},
 		]),
@@ -321,7 +192,8 @@ export function Users() {
 					<GuardedAction
 						permission={AdminPermissions.usersCreate}
 						size="sm"
-						onClick={() => setCreating(true)}
+						nativeButton={false}
+						render={<Link to="/users/new" />}
 					>
 						<Plus />
 						New administrator
@@ -349,7 +221,6 @@ export function Users() {
 					busy={paged.fetching}
 				/>
 			</CardContent>
-			<CreateUserDialog open={creating} onOpenChange={setCreating} />
 
 			<Dialog
 				open={Boolean(reassigning)}

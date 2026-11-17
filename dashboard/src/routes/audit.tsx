@@ -38,7 +38,9 @@ const columns: DataColumn<AuditLog>[] = [
 		accessorFn: (r) => r.action,
 		header: "Action",
 		meta: { sortKey: "action" },
-		cell: ({ row: { original: log } }) => <ActionBadge action={log.action} />,
+		cell: ({ row: { original: log } }) => (
+			<ActionBadge action={log.action} />
+		),
 	},
 	{
 		id: "entity",
@@ -60,7 +62,9 @@ const columns: DataColumn<AuditLog>[] = [
 		id: "ip",
 		accessorFn: (r) => r.ip_address,
 		header: "IP",
-		cell: ({ row: { original: log } }) => <code>{log.ip_address || "—"}</code>,
+		cell: ({ row: { original: log } }) => (
+			<code>{log.ip_address || "—"}</code>
+		),
 	},
 	{
 		id: "at",

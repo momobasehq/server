@@ -25,6 +25,9 @@ fmt:
 fmt-check:
 	@test -z "$$(gofmt -l $$(git ls-files '*.go'))" || (gofmt -l $$(git ls-files '*.go'); exit 1)
 
+dashboard-fmt-check: $(BUNDLE)
+	cd dashboard && pnpm run check
+
 tidy:
 	go mod tidy
 
@@ -33,6 +36,6 @@ tidy:
 $(BUNDLE) dashboard: $(DASHBOARD_SRC)
 	cd dashboard && pnpm install --frozen-lockfile && pnpm run build
 
-quality: fmt-check vet test
+quality: fmt-check dashboard-fmt-check vet test
 
-.PHONY: build test vet fmt fmt-check tidy dashboard quality
+.PHONY: build test vet fmt fmt-check dashboard-fmt-check tidy dashboard quality

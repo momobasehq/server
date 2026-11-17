@@ -163,11 +163,15 @@ export function CommandPalette() {
 										key={tx.id}
 										value={`tx:${tx.id}`}
 										onSelect={() =>
-											go(`/transactions?tx=${encodeURIComponent(tx.id)}`)
+											go(
+												`/transactions?tx=${encodeURIComponent(tx.id)}`,
+											)
 										}
 									>
 										<Receipt />
-										<span className="truncate">{tx.reference}</span>
+										<span className="truncate">
+											{tx.reference}
+										</span>
 										<span className="text-muted-foreground ms-auto">
 											{tx.status}
 										</span>

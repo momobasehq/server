@@ -56,7 +56,11 @@ export function useColumnVisibility(storageKey?: string) {
 }
 
 /** ColumnToggle is the guide's menu for showing or hiding a table's columns. */
-export function ColumnToggle<T extends RowData>({ table }: { table: DataTableInstance<T> }) {
+export function ColumnToggle<T extends RowData>({
+	table,
+}: {
+	table: DataTableInstance<T>;
+}) {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger

@@ -15,8 +15,6 @@ import {
 	selectColumn,
 	type DataColumn,
 } from "@/components/data-table";
-import { ChargeFields, zeroCharges } from "@/components/charge-fields";
-import { CurrencySelect } from "@/components/country-select";
 import { ServiceMixChart } from "@/components/analytics-charts";
 import {
 	AnalyticsFilters,
@@ -52,7 +50,6 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import {
 	AdminPermissions,
 	type AppCredential,
@@ -160,13 +157,6 @@ export function AppDetail() {
 	const [issued, setIssued] = useState<CreatedCredential>();
 	const [naming, setNaming] = useState(false);
 	const [name, setName] = useState("");
-	const [editing, setEditing] = useState(false);
-	const [details, setDetails] = useState({
-		name: "",
-		description: "",
-		currency: "UGX",
-		charges: zeroCharges,
-	});
 	const [scopes, setScopes] = useState<string[]>([]);
 
 	// Scopes come from the server's app-audience catalogue, and the server validates
@@ -214,16 +204,6 @@ export function AppDetail() {
 		onSuccess: async () => {
 			toast.success("Status updated");
 			await queryClient.invalidateQueries({ queryKey: keys.apps.all });
-		},
-		onError: (error: Error) => toast.error(error.message),
-	});
-
-	const save = useMutation({
-		mutationFn: () => client.apps.update(appId, details),
-		onSuccess: async () => {
-			toast.success("App updated");
-			setEditing(false);
-			await refreshCredentials();
 		},
 		onError: (error: Error) => toast.error(error.message),
 	});
@@ -295,9 +275,7 @@ export function AppDetail() {
 			return done;
 		},
 		onSuccess: (done) =>
-			toast.success(
-				`Revoked ${done} credential${done === 1 ? "" : "s"}`,
-			),
+			toast.success(`Revoked ${done} credential${done === 1 ? "" : "s"}`),
 	});
 
 	// Selection exists only for those who may revoke; for others there is no bulk action.
@@ -386,15 +364,8 @@ export function AppDetail() {
 							permission={AdminPermissions.appsUpdate}
 							variant="outline"
 							size="sm"
-							onClick={() => {
-								setDetails({
-									name: app.data?.name ?? "",
-									description: app.data?.description ?? "",
-									currency: app.data?.currency ?? "UGX",
-									charges: app.data?.charges ?? zeroCharges,
-								});
-								setEditing(true);
-							}}
+							nativeButton={false}
+							render={<Link to={`/apps/${appId}/edit`} />}
 						>
 							Edit
 						</GuardedAction>
@@ -603,8 +574,8 @@ export function AppDetail() {
 							{revocable.length === 1 ? "" : "s"}?
 						</DialogTitle>
 						<DialogDescription>
-							Anything signing in with these stops working at once.
-							This cannot be undone.
+							Anything signing in with these stops working at
+							once. This cannot be undone.
 						</DialogDescription>
 					</DialogHeader>
 					<ul className="text-muted-foreground list-inside list-disc">
@@ -626,7 +597,9 @@ export function AppDetail() {
 							variant="destructive"
 							onClick={() =>
 								revokeMany.mutate(
-									revocable.map((credential) => credential.id),
+									revocable.map(
+										(credential) => credential.id,
+									),
 								)
 							}
 							disabled={revokeMany.isPending}
@@ -711,80 +684,6 @@ export function AppDetail() {
 							disabled={create.isPending}
 						>
 							Create
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-
-			<Dialog open={editing} onOpenChange={setEditing}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Edit app</DialogTitle>
-						<DialogDescription>
-							Changes apply only to future transactions.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="flex flex-col gap-3">
-						<div className="flex flex-col gap-2">
-							<Label htmlFor="edit-app-name">Name</Label>
-							<Input
-								id="edit-app-name"
-								value={details.name}
-								onChange={(event) =>
-									setDetails({
-										...details,
-										name: event.target.value,
-									})
-								}
-							/>
-						</div>
-						<div className="flex flex-col gap-2">
-							<Label htmlFor="edit-app-currency">Currency</Label>
-							<CurrencySelect
-								id="edit-app-currency"
-								value={details.currency}
-								onChange={(currency) => setDetails({ ...details, currency })}
-							/>
-						</div>
-						<ChargeFields
-							id="edit-app-charges"
-							value={details.charges}
-							onChange={(charges) =>
-								setDetails({ ...details, charges })
-							}
-						/>
-						<div className="flex flex-col gap-2">
-							<Label htmlFor="edit-app-description">
-								Description
-							</Label>
-							<Textarea
-								id="edit-app-description"
-								value={details.description}
-								onChange={(event) =>
-									setDetails({
-										...details,
-										description: event.target.value,
-									})
-								}
-							/>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button
-							variant="outline"
-							onClick={() => setEditing(false)}
-						>
-							Cancel
-						</Button>
-						<Button
-							onClick={() => save.mutate()}
-							disabled={
-								save.isPending ||
-								!details.name ||
-								details.currency.length !== 3
-							}
-						>
-							Save
 						</Button>
 					</DialogFooter>
 				</DialogContent>

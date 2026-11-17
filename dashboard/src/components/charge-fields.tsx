@@ -73,7 +73,10 @@ function RuleField({
 	);
 }
 
-/** ChargeFields edits the complete per-service schedule expected by the API. */
+/**
+ * ChargeFields edits the complete per-service schedule expected by the API. It renders
+ * the two rules as siblings so the surrounding grid can place them side by side.
+ */
 export function ChargeFields({
 	id,
 	value,
@@ -84,14 +87,7 @@ export function ChargeFields({
 	onChange: (value: ChargeSchedule) => void;
 }) {
 	return (
-		<div className="flex flex-col gap-2">
-			<div>
-				<p className="font-medium">Transaction charges</p>
-				<p className="text-muted-foreground">
-					Flat values use minor units; percentages use basis points
-					(1,000 = 10%).
-				</p>
-			</div>
+		<>
 			<RuleField
 				id={`${id}-collection`}
 				label="Collections"
@@ -106,6 +102,10 @@ export function ChargeFields({
 					onChange({ ...value, disbursement })
 				}
 			/>
-		</div>
+		</>
 	);
 }
+
+/** How charge values are read, for the heading of whatever section holds the fields. */
+export const chargeHint =
+	"Flat values use minor units; percentages use basis points (1,000 = 10%).";

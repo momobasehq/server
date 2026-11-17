@@ -1,4 +1,4 @@
 allowBuilds:
-  esbuild: false
+    esbuild: false
 minimumReleaseAgeExclude:
-  - momobase@1.1.0
+    - momobase@1.1.0

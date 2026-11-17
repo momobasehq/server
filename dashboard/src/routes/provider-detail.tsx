@@ -1,6 +1,5 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { Link, useParams } from "react-router";
 import { AdminPermissions, type ChargeRule } from "momobase";
 
@@ -14,11 +13,13 @@ import {
 	toQuery,
 	type AnalyticsRange,
 } from "@/components/analytics-filters";
+import { BackLink, Detail } from "@/components/form-page";
+import { GuardedAction } from "@/components/guarded-action";
 import { StatusBadge } from "@/components/status-badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import {
 	Card,
+	CardAction,
 	CardContent,
 	CardDescription,
 	CardHeader,
@@ -61,15 +62,7 @@ export function ProviderDetail() {
 
 	return (
 		<div className="flex flex-col gap-4">
-			<Button
-				variant="ghost"
-				size="sm"
-				render={<Link to="/providers" />}
-				className="self-start"
-			>
-				<ArrowLeft />
-				All provider accounts
-			</Button>
+			<BackLink to="/providers" label="All provider accounts" />
 
 			{account.isError && (
 				<Alert variant="destructive">
@@ -91,6 +84,21 @@ export function ProviderDetail() {
 								? `${account.data.provider_code} provider account`
 								: "Loading provider account details…"}
 						</CardDescription>
+						<CardAction>
+							<GuardedAction
+								permission={AdminPermissions.providersUpdate}
+								variant="outline"
+								size="sm"
+								nativeButton={false}
+								render={
+									<Link
+										to={`/providers/${providerId}/configure`}
+									/>
+								}
+							>
+								Configure
+							</GuardedAction>
+						</CardAction>
 					</CardHeader>
 					{account.data && (
 						<CardContent className="grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -177,15 +185,6 @@ export function ProviderDetail() {
 					permission.
 				</p>
 			)}
-		</div>
-	);
-}
-
-function Detail({ label, children }: { label: string; children: ReactNode }) {
-	return (
-		<div className="min-w-0">
-			<p className="text-muted-foreground">{label}</p>
-			<div className="mt-1">{children}</div>
 		</div>
 	);
 }
