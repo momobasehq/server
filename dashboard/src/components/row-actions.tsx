@@ -29,7 +29,7 @@ export interface RowAction {
 
 /**
  * rowActionsColumn is the guide's trailing ⋯ menu. Every row gets "Copy ID" first,
- * since IDs are what support threads and the API tester ask for.
+ * since IDs are what support threads and API lookups ask for.
  */
 export function rowActionsColumn<T extends RowData>(
 	actions: (row: T) => RowAction[],
