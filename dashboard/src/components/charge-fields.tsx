@@ -1,20 +1,23 @@
-import type { ChargeRule, ChargeSchedule, ChargeType } from "momobase";
+import type { ChargeRule, ChargeSchedule } from "momobase";
 
-import { ButtonGroup } from "@/components/ui/button-group";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
+	InputGroup,
+	InputGroupAddon,
+	InputGroupInput,
+	InputGroupText,
+} from "@/components/ui/input-group";
+import { Label } from "@/components/ui/label";
 
 export const zeroCharges: ChargeSchedule = {
-	collection: { type: "flat", value: 0 },
-	disbursement: { type: "flat", value: 0 },
+	collection: { flat: 0, percentage: 0 },
+	disbursement: { flat: 0, percentage: 0 },
 };
+
+/** Parses a non-negative whole number, clamping to max when one is given. */
+function wholeNumber(raw: string, max?: number) {
+	const value = Math.max(0, Math.trunc(Number(raw) || 0));
+	return max === undefined ? value : Math.min(value, max);
+}
 
 function RuleField({
 	id,
@@ -29,46 +32,51 @@ function RuleField({
 }) {
 	return (
 		<div className="grid gap-2">
-			<Label htmlFor={`${id}-value`}>{label}</Label>
-			<ButtonGroup className="w-full">
-				<Select
-					value={rule.type}
-					onValueChange={(type) =>
-						onChange({
-							...rule,
-							type: (type ?? "flat") as ChargeType,
-						})
-					}
-				>
-					<SelectTrigger
-						id={`${id}-type`}
-						aria-label={`${label} charge type`}
-					>
-						<SelectValue />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="flat">Flat</SelectItem>
-						<SelectItem value="percentage">Percentage</SelectItem>
-					</SelectContent>
-				</Select>
-				<Input
-					id={`${id}-value`}
-					type="number"
-					min={0}
-					step={1}
-					max={rule.type === "percentage" ? 10_000 : undefined}
-					value={rule.value}
-					onChange={(event) =>
-						onChange({
-							...rule,
-							value: Math.max(
-								0,
-								Math.trunc(Number(event.target.value) || 0),
-							),
-						})
-					}
-				/>
-			</ButtonGroup>
+			<Label htmlFor={`${id}-flat`}>{label}</Label>
+			<div className="grid grid-cols-2 gap-2">
+				<InputGroup>
+					<InputGroupInput
+						id={`${id}-flat`}
+						aria-label={`${label} flat fee`}
+						type="number"
+						min={0}
+						step={1}
+						value={rule.flat}
+						onChange={(event) =>
+							onChange({
+								...rule,
+								flat: wholeNumber(event.target.value),
+							})
+						}
+					/>
+					<InputGroupAddon align="inline-end">
+						<InputGroupText>flat</InputGroupText>
+					</InputGroupAddon>
+				</InputGroup>
+				<InputGroup>
+					<InputGroupInput
+						id={`${id}-percentage`}
+						aria-label={`${label} percentage fee`}
+						type="number"
+						min={0}
+						max={10_000}
+						step={1}
+						value={rule.percentage}
+						onChange={(event) =>
+							onChange({
+								...rule,
+								percentage: wholeNumber(
+									event.target.value,
+									10_000,
+								),
+							})
+						}
+					/>
+					<InputGroupAddon align="inline-end">
+						<InputGroupText>bps</InputGroupText>
+					</InputGroupAddon>
+				</InputGroup>
+			</div>
 		</div>
 	);
 }
@@ -108,4 +116,4 @@ export function ChargeFields({
 
 /** How charge values are read, for the heading of whatever section holds the fields. */
 export const chargeHint =
-	"Flat values use minor units; percentages use basis points (1,000 = 10%).";
+	"Each fee is the flat amount plus the percentage. Flat values use minor units; percentages use basis points (300 = 3%).";

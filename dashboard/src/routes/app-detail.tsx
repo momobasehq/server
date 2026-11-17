@@ -53,7 +53,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	AdminPermissions,
 	type AppCredential,
-	type ChargeRule,
 	type CreatedCredential,
 	type CredentialListQuery,
 } from "momobase";
@@ -64,7 +63,7 @@ const credentialFacets = [
 
 import { useAuth } from "@/hooks/use-auth";
 import { usePagedQuery } from "@/hooks/use-paged-query";
-import { formatDateTime } from "@/lib/format";
+import { formatCharge, formatDateTime } from "@/lib/format";
 import { keys } from "@/lib/query-keys";
 
 /**
@@ -387,7 +386,10 @@ export function AppDetail() {
 					<div>
 						<p className="text-muted-foreground">Collection fee</p>
 						<span>
-							{formatCharge(app.data?.charges.collection)}
+							{formatCharge(
+								app.data?.charges.collection,
+								app.data?.currency ?? "",
+							)}
 						</span>
 					</div>
 					<div>
@@ -395,7 +397,10 @@ export function AppDetail() {
 							Disbursement fee
 						</p>
 						<span>
-							{formatCharge(app.data?.charges.disbursement)}
+							{formatCharge(
+								app.data?.charges.disbursement,
+								app.data?.currency ?? "",
+							)}
 						</span>
 					</div>
 					<div>
@@ -698,11 +703,4 @@ export function AppDetail() {
 			/>
 		</div>
 	);
-}
-
-function formatCharge(rule?: ChargeRule) {
-	if (!rule) return "—";
-	return rule.type === "percentage"
-		? `${rule.value / 100}%`
-		: `${rule.value} minor units`;
 }

@@ -1,7 +1,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
-import { AdminPermissions, type ChargeRule } from "momobase";
+import { AdminPermissions } from "momobase";
 
 import {
 	ServiceMixChart,
@@ -27,15 +27,8 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
-import { formatDateTime } from "@/lib/format";
+import { formatCharge, formatDateTime } from "@/lib/format";
 import { keys } from "@/lib/query-keys";
-
-function formatCharge(rule?: ChargeRule) {
-	if (!rule) return "—";
-	return rule.type === "percentage"
-		? `${rule.value / 100}%`
-		: `${rule.value} minor units`;
-}
 
 /** ProviderDetail shows one account's configuration metadata and payment activity. */
 export function ProviderDetail() {
@@ -129,11 +122,15 @@ export function ProviderDetail() {
 								<code>{account.data.currency}</code>
 							</Detail>
 							<Detail label="Collection fee">
-								{formatCharge(account.data.charges.collection)}
+								{formatCharge(
+									account.data.charges.collection,
+									account.data.currency,
+								)}
 							</Detail>
 							<Detail label="Disbursement fee">
 								{formatCharge(
 									account.data.charges.disbursement,
+									account.data.currency,
 								)}
 							</Detail>
 							<Detail label="Account ID">
