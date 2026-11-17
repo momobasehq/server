@@ -7,7 +7,6 @@ import {
 	Receipt,
 	Route as RouteIcon,
 	ShieldCheck,
-	TerminalSquare,
 	Users,
 } from "lucide-react";
 import { AdminPermissions, type PermissionCode } from "momobase";
@@ -108,15 +107,6 @@ export const navigation: NavGroup[] = [
 				label: "Audit log",
 				icon: FileClock,
 				permission: AdminPermissions.auditRead,
-			},
-			// The tester issues arbitrary requests with the caller's own session, so it can
-			// never exceed what they already hold. Reading the system is the lowest bar that
-			// still keeps it out of a role with no read access at all.
-			{
-				to: "/api-tester",
-				label: "API tester",
-				icon: TerminalSquare,
-				permission: AdminPermissions.systemRead,
 			},
 		],
 	},

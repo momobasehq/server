@@ -6,7 +6,6 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { allNavItems } from "@/lib/navigation";
-import { ApiTester } from "@/routes/api-tester";
 import { AppDetail } from "@/routes/app-detail";
 import { EditApp, NewApp } from "@/routes/app-form";
 import { Apps } from "@/routes/apps";
@@ -105,7 +104,6 @@ const screens: Record<string, ReactElement> = {
 	"/roles": <Roles />,
 	"/operations": <Operations />,
 	"/audit": <Audit />,
-	"/api-tester": <ApiTester />,
 };
 
 /**
