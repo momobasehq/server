@@ -60,13 +60,8 @@ export const navigation: NavGroup[] = [
 	},
 	{
 		label: "Configuration",
+		// Setup order: an app's payments reach a route, which reaches a provider.
 		items: [
-			{
-				to: "/apps",
-				label: "Apps",
-				icon: AppWindow,
-				permission: AdminPermissions.appsRead,
-			},
 			{
 				to: "/providers",
 				label: "Providers",
@@ -78,6 +73,12 @@ export const navigation: NavGroup[] = [
 				label: "Routes",
 				icon: RouteIcon,
 				permission: AdminPermissions.routesRead,
+			},
+			{
+				to: "/apps",
+				label: "Apps",
+				icon: AppWindow,
+				permission: AdminPermissions.appsRead,
 			},
 		],
 	},
