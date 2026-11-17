@@ -275,9 +275,7 @@ export function AppDetail() {
 			return done;
 		},
 		onSuccess: (done) =>
-			toast.success(
-				`Revoked ${done} credential${done === 1 ? "" : "s"}`,
-			),
+			toast.success(`Revoked ${done} credential${done === 1 ? "" : "s"}`),
 	});
 
 	// Selection exists only for those who may revoke; for others there is no bulk action.
@@ -576,8 +574,8 @@ export function AppDetail() {
 							{revocable.length === 1 ? "" : "s"}?
 						</DialogTitle>
 						<DialogDescription>
-							Anything signing in with these stops working at once.
-							This cannot be undone.
+							Anything signing in with these stops working at
+							once. This cannot be undone.
 						</DialogDescription>
 					</DialogHeader>
 					<ul className="text-muted-foreground list-inside list-disc">
@@ -599,7 +597,9 @@ export function AppDetail() {
 							variant="destructive"
 							onClick={() =>
 								revokeMany.mutate(
-									revocable.map((credential) => credential.id),
+									revocable.map(
+										(credential) => credential.id,
+									),
 								)
 							}
 							disabled={revokeMany.isPending}

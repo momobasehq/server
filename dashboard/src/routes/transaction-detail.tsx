@@ -51,8 +51,9 @@ export function TransactionDetail() {
 							)}
 						</CardTitle>
 						<CardDescription>
-							Complete values captured on the transaction record. Fees
-							are the immutable amounts computed when it was created.
+							Complete values captured on the transaction record.
+							Fees are the immutable amounts computed when it was
+							created.
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
@@ -156,7 +157,9 @@ function Fields({ transaction }: { transaction: AdminTransaction }) {
 			<Detail label="Next reconciliation">
 				{formatDateTime(transaction.next_reconcile_at)}
 			</Detail>
-			<Detail label="Created">{formatDateTime(transaction.created_at)}</Detail>
+			<Detail label="Created">
+				{formatDateTime(transaction.created_at)}
+			</Detail>
 			<Detail label="Last updated">
 				{formatDateTime(transaction.updated_at)}
 			</Detail>

@@ -169,8 +169,7 @@ export function usePagedQuery<T, Q extends ListOptions = ListOptions>(
 					filterFields.map((field) => [field, undefined]),
 				),
 			}),
-		narrowed:
-			Boolean(search || created) || Object.keys(filters).length > 0,
+		narrowed: Boolean(search || created) || Object.keys(filters).length > 0,
 	};
 
 	return {

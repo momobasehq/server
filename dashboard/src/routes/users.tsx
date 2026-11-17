@@ -145,7 +145,8 @@ export function Users() {
 			accessorFn: (r) => r.created_at,
 			header: "Created",
 			meta: { sortKey: "created_at" },
-			cell: ({ row: { original: user } }) => formatDateTime(user.created_at),
+			cell: ({ row: { original: user } }) =>
+				formatDateTime(user.created_at),
 		},
 		rowActionsColumn<AdminUser>((user) => [
 			{
@@ -172,7 +173,8 @@ export function Users() {
 				onSelect: () =>
 					changeStatus.mutate({
 						id: user.id,
-						status: user.status === "active" ? "inactive" : "active",
+						status:
+							user.status === "active" ? "inactive" : "active",
 					}),
 			},
 		]),

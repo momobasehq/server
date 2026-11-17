@@ -166,12 +166,16 @@ export function DataTable<T extends RowData>({
 		[columns, list],
 	);
 	const sortColumn = list?.sort
-		? columns.find((column) => column.meta?.sortKey === list.sort?.field)?.id
+		? columns.find((column) => column.meta?.sortKey === list.sort?.field)
+				?.id
 		: undefined;
 	const sorting: SortingState =
-		list?.sort && sortColumn ? [{ id: sortColumn, desc: list.sort.desc }] : [];
+		list?.sort && sortColumn
+			? [{ id: sortColumn, desc: list.sort.desc }]
+			: [];
 	const onSortingChange: OnChangeFn<SortingState> = (updater) => {
-		const [next] = typeof updater === "function" ? updater(sorting) : updater;
+		const [next] =
+			typeof updater === "function" ? updater(sorting) : updater;
 		const field = next
 			? columns.find((column) => column.id === next.id)?.meta?.sortKey
 			: undefined;
@@ -186,9 +190,7 @@ export function DataTable<T extends RowData>({
 		manualSorting: Boolean(list),
 		manualFiltering: Boolean(list),
 		...(list && { onSortingChange }),
-		enableRowSelection: canSelect
-			? (row) => canSelect(row.original)
-			: true,
+		enableRowSelection: canSelect ? (row) => canSelect(row.original) : true,
 		state: {
 			globalFilter,
 			...(list && { sorting }),
@@ -207,9 +209,16 @@ export function DataTable<T extends RowData>({
 			<div className="flex flex-wrap items-center gap-2">
 				{list ? (
 					<>
-						<SearchBox list={list} placeholder={searchPlaceholder} />
+						<SearchBox
+							list={list}
+							placeholder={searchPlaceholder}
+						/>
 						{facets.map((facet) => (
-							<FacetFilter key={facet.field} list={list} facet={facet} />
+							<FacetFilter
+								key={facet.field}
+								list={list}
+								facet={facet}
+							/>
 						))}
 						{createdFilter && <CreatedFilter list={list} />}
 						<ResetFilters list={list} />
@@ -219,7 +228,9 @@ export function DataTable<T extends RowData>({
 						placeholder="Filter rows…"
 						aria-label="Filter rows"
 						value={globalFilter}
-						onChange={(event) => setGlobalFilter(event.target.value)}
+						onChange={(event) =>
+							setGlobalFilter(event.target.value)
+						}
 						className="h-7 max-w-xs"
 					/>
 				)}
@@ -241,15 +252,21 @@ export function DataTable<T extends RowData>({
 									>
 										{header.isPlaceholder ? null : header.column.getCanSort() ? (
 											<SortButton
-												align={header.column.columnDef.meta?.align}
+												align={
+													header.column.columnDef.meta
+														?.align
+												}
 												sorted={header.column.getIsSorted()}
 												onClick={() =>
 													header.column.toggleSorting(
-														header.column.getIsSorted() === "asc",
+														header.column.getIsSorted() ===
+															"asc",
 													)
 												}
 											>
-												<table.FlexRender header={header} />
+												<table.FlexRender
+													header={header}
+												/>
 											</SortButton>
 										) : (
 											<table.FlexRender header={header} />
@@ -297,11 +314,14 @@ export function DataTable<T extends RowData>({
 											onRowClick
 												? (event) => {
 														if (
-															event.key === "Enter" ||
+															event.key ===
+																"Enter" ||
 															event.key === " "
 														) {
 															event.preventDefault();
-															onRowClick(row.original);
+															onRowClick(
+																row.original,
+															);
 														}
 													}
 												: undefined
@@ -351,7 +371,12 @@ function SortButton({
 	onClick: () => void;
 	children: ReactNode;
 }) {
-	const Icon = sorted === "asc" ? ArrowUp : sorted === "desc" ? ArrowDown : ArrowUpDown;
+	const Icon =
+		sorted === "asc"
+			? ArrowUp
+			: sorted === "desc"
+				? ArrowDown
+				: ArrowUpDown;
 	return (
 		<Button
 			variant="ghost"

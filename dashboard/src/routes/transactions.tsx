@@ -157,7 +157,9 @@ const columns: DataColumn<AdminTransaction>[] = [
 		accessorFn: (r) => r.created_at,
 		header: "Created",
 		meta: { sortKey: "created_at" },
-		cell: ({ row: { original: tx } }) => <Timestamp value={tx.created_at} />,
+		cell: ({ row: { original: tx } }) => (
+			<Timestamp value={tx.created_at} />
+		),
 	},
 ];
 
@@ -178,7 +180,9 @@ export function Transactions() {
 	// render it at once instead of refetching what the table already holds.
 	const navigate = useNavigate();
 	const select = (tx: AdminTransaction) =>
-		void navigate(`/transactions/${encodeURIComponent(tx.id)}`, { state: tx });
+		void navigate(`/transactions/${encodeURIComponent(tx.id)}`, {
+			state: tx,
+		});
 	// Links copied before details became a page used ?tx=, so they still resolve.
 	const [params] = useSearchParams();
 	const legacyId = params.get("tx");
@@ -203,7 +207,10 @@ export function Transactions() {
 
 	if (legacyId)
 		return (
-			<Navigate to={`/transactions/${encodeURIComponent(legacyId)}`} replace />
+			<Navigate
+				to={`/transactions/${encodeURIComponent(legacyId)}`}
+				replace
+			/>
 		);
 
 	return (

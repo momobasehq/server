@@ -32,18 +32,66 @@ import { Users } from "@/routes/users";
  * create/edit forms. Each is gated on the permission its action needs, and static
  * segments like "new" outrank the ":id" routes beside them.
  */
-const subPages: { path: string; permission: PermissionCode; element: ReactElement }[] = [
-	{ path: "transactions/:transactionId", permission: AdminPermissions.transactionsRead, element: <TransactionDetail /> },
-	{ path: "apps/new", permission: AdminPermissions.appsCreate, element: <NewApp /> },
-	{ path: "apps/:appId", permission: AdminPermissions.appsRead, element: <AppDetail /> },
-	{ path: "apps/:appId/edit", permission: AdminPermissions.appsUpdate, element: <EditApp /> },
-	{ path: "providers/new", permission: AdminPermissions.providersCreate, element: <NewProvider /> },
-	{ path: "providers/:providerId", permission: AdminPermissions.providersRead, element: <ProviderDetail /> },
-	{ path: "providers/:providerId/configure", permission: AdminPermissions.providersUpdate, element: <ConfigureProvider /> },
-	{ path: "routes/new", permission: AdminPermissions.routesCreate, element: <NewRoute /> },
-	{ path: "users/new", permission: AdminPermissions.usersCreate, element: <NewUser /> },
-	{ path: "roles/new", permission: AdminPermissions.rolesCreate, element: <NewRole /> },
-	{ path: "roles/:roleName/edit", permission: AdminPermissions.rolesUpdate, element: <EditRole /> },
+const subPages: {
+	path: string;
+	permission: PermissionCode;
+	element: ReactElement;
+}[] = [
+	{
+		path: "transactions/:transactionId",
+		permission: AdminPermissions.transactionsRead,
+		element: <TransactionDetail />,
+	},
+	{
+		path: "apps/new",
+		permission: AdminPermissions.appsCreate,
+		element: <NewApp />,
+	},
+	{
+		path: "apps/:appId",
+		permission: AdminPermissions.appsRead,
+		element: <AppDetail />,
+	},
+	{
+		path: "apps/:appId/edit",
+		permission: AdminPermissions.appsUpdate,
+		element: <EditApp />,
+	},
+	{
+		path: "providers/new",
+		permission: AdminPermissions.providersCreate,
+		element: <NewProvider />,
+	},
+	{
+		path: "providers/:providerId",
+		permission: AdminPermissions.providersRead,
+		element: <ProviderDetail />,
+	},
+	{
+		path: "providers/:providerId/configure",
+		permission: AdminPermissions.providersUpdate,
+		element: <ConfigureProvider />,
+	},
+	{
+		path: "routes/new",
+		permission: AdminPermissions.routesCreate,
+		element: <NewRoute />,
+	},
+	{
+		path: "users/new",
+		permission: AdminPermissions.usersCreate,
+		element: <NewUser />,
+	},
+	{
+		path: "roles/new",
+		permission: AdminPermissions.rolesCreate,
+		element: <NewRole />,
+	},
+	{
+		path: "roles/:roleName/edit",
+		permission: AdminPermissions.rolesUpdate,
+		element: <EditRole />,
+	},
 ];
 
 /** The screen each navigable path renders, keyed to match lib/navigation. */
@@ -134,7 +182,9 @@ export function App() {
 						key={page.path}
 						path={page.path}
 						element={
-							<Guard permission={page.permission}>{page.element}</Guard>
+							<Guard permission={page.permission}>
+								{page.element}
+							</Guard>
 						}
 					/>
 				))}

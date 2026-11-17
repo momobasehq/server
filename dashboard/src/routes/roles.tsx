@@ -2,11 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Lock, Plus } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
-import {
-	AdminPermissions,
-	PermissionWildcard,
-	type Role,
-} from "momobase";
+import { AdminPermissions, PermissionWildcard, type Role } from "momobase";
 
 import { DataTable, type DataColumn } from "@/components/data-table";
 import { rowActionsColumn } from "@/components/row-actions";
@@ -89,7 +85,9 @@ export function Roles() {
 				permission: AdminPermissions.rolesUpdate,
 				disabled: role.system,
 				onSelect: () =>
-					void navigate(`/roles/${encodeURIComponent(role.name)}/edit`),
+					void navigate(
+						`/roles/${encodeURIComponent(role.name)}/edit`,
+					),
 			},
 			{
 				label: "Delete",

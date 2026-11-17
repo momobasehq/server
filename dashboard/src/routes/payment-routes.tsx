@@ -9,7 +9,11 @@ import {
 } from "momobase";
 
 const routeFacets = [
-	{ field: "serviceType", label: "Service", options: ["collection", "disbursement"] },
+	{
+		field: "serviceType",
+		label: "Service",
+		options: ["collection", "disbursement"],
+	},
 	{ field: "paymentMethod", label: "Method", options: paymentMethods },
 ] as const;
 
@@ -64,7 +68,8 @@ export function PaymentRoutes() {
 			id: "service",
 			accessorFn: (r) => r.service_type,
 			header: "Service",
-			cell: ({ row: { original: route } }) => titleCase(route.service_type),
+			cell: ({ row: { original: route } }) =>
+				titleCase(route.service_type),
 		},
 		{
 			id: "method",

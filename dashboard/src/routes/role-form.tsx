@@ -164,7 +164,10 @@ function RoleForm({ role }: { role?: Role }) {
 				) : (
 					byResource(catalogue.data?.items ?? []).map(
 						([resource, permissions]) => (
-							<fieldset key={resource} className="flex min-w-0 flex-col gap-2">
+							<fieldset
+								key={resource}
+								className="flex min-w-0 flex-col gap-2"
+							>
 								<legend className="mb-2 font-medium">
 									{titleCase(resource)}
 								</legend>

@@ -101,7 +101,9 @@ export function NewProvider() {
 			}),
 		onSuccess: async (account) => {
 			toast.success(`Created ${account.name}`);
-			await queryClient.invalidateQueries({ queryKey: keys.providers.all });
+			await queryClient.invalidateQueries({
+				queryKey: keys.providers.all,
+			});
 			void navigate(`/providers/${account.id}`);
 		},
 		onError: (error: Error) => toast.error(error.message),
@@ -155,7 +157,9 @@ export function NewProvider() {
 					<Input
 						id="provider-name"
 						value={form.name}
-						onChange={(e) => setForm({ ...form, name: e.target.value })}
+						onChange={(e) =>
+							setForm({ ...form, name: e.target.value })
+						}
 					/>
 				</FormField>
 				<FormField
@@ -178,7 +182,9 @@ export function NewProvider() {
 						</SelectTrigger>
 						<SelectContent>
 							<SelectItem value="sandbox">Sandbox</SelectItem>
-							<SelectItem value="production">Production</SelectItem>
+							<SelectItem value="production">
+								Production
+							</SelectItem>
 						</SelectContent>
 					</Select>
 				</FormField>
@@ -311,9 +317,9 @@ function ConfigureForms({ account }: { account: ProviderAccount }) {
 					<CardTitle>Configure {account.name}</CardTitle>
 					<CardDescription>
 						<code>{account.provider_code}</code> · config v
-						{account.config_version}. Settings and configuration save
-						separately, because a configuration change reloads the
-						adapter.
+						{account.config_version}. Settings and configuration
+						save separately, because a configuration change reloads
+						the adapter.
 					</CardDescription>
 					<CardAction>
 						<Button
@@ -359,7 +365,9 @@ function ConfigureForms({ account }: { account: ProviderAccount }) {
 							/>
 							<div className={`flex justify-end ${wide}`}>
 								<GuardedAction
-									permission={AdminPermissions.providersUpdate}
+									permission={
+										AdminPermissions.providersUpdate
+									}
 									type="submit"
 									disabled={
 										saveSettings.isPending ||
@@ -394,7 +402,9 @@ function ConfigureForms({ account }: { account: ProviderAccount }) {
 									rows={9}
 									className="font-mono"
 									value={config}
-									onChange={(event) => setConfig(event.target.value)}
+									onChange={(event) =>
+										setConfig(event.target.value)
+									}
 									placeholder={
 										'{\n  "api_user": "…",\n  "api_key": "…",\n  "webhook_secret": "…"\n}'
 									}
@@ -402,9 +412,13 @@ function ConfigureForms({ account }: { account: ProviderAccount }) {
 							</FormField>
 							<div className={`flex justify-end ${wide}`}>
 								<GuardedAction
-									permission={AdminPermissions.providersUpdate}
+									permission={
+										AdminPermissions.providersUpdate
+									}
 									type="submit"
-									disabled={saveConfig.isPending || !config.trim()}
+									disabled={
+										saveConfig.isPending || !config.trim()
+									}
 								>
 									Replace configuration
 								</GuardedAction>

@@ -90,7 +90,11 @@ export function ProviderDetail() {
 								variant="outline"
 								size="sm"
 								nativeButton={false}
-								render={<Link to={`/providers/${providerId}/configure`} />}
+								render={
+									<Link
+										to={`/providers/${providerId}/configure`}
+									/>
+								}
 							>
 								Configure
 							</GuardedAction>

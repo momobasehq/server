@@ -63,7 +63,9 @@ export function NewUser() {
 						id="user-name"
 						autoComplete="off"
 						value={form.name}
-						onChange={(e) => setForm({ ...form, name: e.target.value })}
+						onChange={(e) =>
+							setForm({ ...form, name: e.target.value })
+						}
 					/>
 				</FormField>
 				<FormField label="Email" htmlFor="user-email">
@@ -110,7 +112,9 @@ export function NewUser() {
 						<SelectTrigger id="user-role" className="w-full">
 							<SelectValue
 								placeholder={
-									roles.isPending ? "Loading…" : "Select a role"
+									roles.isPending
+										? "Loading…"
+										: "Select a role"
 								}
 							/>
 						</SelectTrigger>

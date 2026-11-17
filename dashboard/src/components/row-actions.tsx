@@ -109,7 +109,9 @@ function RowActions({ id, actions }: { id: string; actions: RowAction[] }) {
 				{destructive.length > 0 && (
 					<>
 						<DropdownMenuSeparator />
-						<DropdownMenuGroup>{destructive.map(item)}</DropdownMenuGroup>
+						<DropdownMenuGroup>
+							{destructive.map(item)}
+						</DropdownMenuGroup>
 					</>
 				)}
 			</DropdownMenuContent>

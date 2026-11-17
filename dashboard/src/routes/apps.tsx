@@ -1,14 +1,18 @@
 import { Plus } from "lucide-react";
 import { Link, useNavigate } from "react-router";
-import {
-	AdminPermissions,
-	type App,
-	type AppListQuery,
-} from "momobase";
+import { AdminPermissions, type App, type AppListQuery } from "momobase";
 
 const appFacets = [
-	{ field: "status", label: "Status", options: ["active", "disabled", "suspended"] },
-	{ field: "environment", label: "Environment", options: ["sandbox", "production"] },
+	{
+		field: "status",
+		label: "Status",
+		options: ["active", "disabled", "suspended"],
+	},
+	{
+		field: "environment",
+		label: "Environment",
+		options: ["sandbox", "production"],
+	},
 ] as const;
 
 import { DataTable, type DataColumn } from "@/components/data-table";
@@ -81,7 +85,9 @@ export function Apps() {
 			accessorFn: (r) => r.status,
 			header: "Status",
 			meta: { sortKey: "status" },
-			cell: ({ row: { original: app } }) => <StatusBadge status={app.status} />,
+			cell: ({ row: { original: app } }) => (
+				<StatusBadge status={app.status} />
+			),
 		},
 		{
 			id: "description",
@@ -94,12 +100,16 @@ export function Apps() {
 			accessorFn: (r) => r.created_at,
 			header: "Created",
 			meta: { sortKey: "created_at" },
-			cell: ({ row: { original: app } }) => formatDateTime(app.created_at),
+			cell: ({ row: { original: app } }) =>
+				formatDateTime(app.created_at),
 		},
 		// Status, credentials, and the tester all live on the detail page, so the menu
 		// offers one unambiguous way in rather than a partial set of actions.
 		rowActionsColumn<App>((app) => [
-			{ label: "Manage", onSelect: () => void navigate(`/apps/${app.id}`) },
+			{
+				label: "Manage",
+				onSelect: () => void navigate(`/apps/${app.id}`),
+			},
 		]),
 	];
 

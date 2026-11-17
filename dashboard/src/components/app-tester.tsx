@@ -367,7 +367,9 @@ export function AppTester({ clientId, clientSecret }: AppTesterProps) {
 								<CurrencySelect
 									id="tester-currency"
 									value={form.currency}
-									onChange={(currency) => setForm({ ...form, currency })}
+									onChange={(currency) =>
+										setForm({ ...form, currency })
+									}
 								/>
 							</div>
 							<div className="flex flex-col gap-2">
@@ -375,7 +377,9 @@ export function AppTester({ clientId, clientSecret }: AppTesterProps) {
 								<CountrySelect
 									id="tester-country"
 									value={form.country}
-									onChange={(country) => setForm({ ...form, country })}
+									onChange={(country) =>
+										setForm({ ...form, country })
+									}
 									placeholder="Optional"
 								/>
 							</div>

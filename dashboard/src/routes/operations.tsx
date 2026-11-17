@@ -17,8 +17,16 @@ import {
 } from "momobase";
 
 const healthFacets = [
-	{ field: "status", label: "Status", options: ["healthy", "degraded", "down", "unknown", "disabled"] },
-	{ field: "circuitState", label: "Circuit", options: ["closed", "half_open", "open"] },
+	{
+		field: "status",
+		label: "Status",
+		options: ["healthy", "degraded", "down", "unknown", "disabled"],
+	},
+	{
+		field: "circuitState",
+		label: "Circuit",
+		options: ["closed", "half_open", "open"],
+	},
 ] as const;
 import { Link } from "react-router";
 
@@ -72,7 +80,9 @@ const healthColumns: DataColumn<ProviderHealthSnapshot>[] = [
 		id: "status",
 		accessorFn: (r) => r.status,
 		header: "Status",
-		cell: ({ row: { original: row } }) => <StatusBadge status={row.status} />,
+		cell: ({ row: { original: row } }) => (
+			<StatusBadge status={row.status} />
+		),
 	},
 	{
 		id: "circuit",
@@ -100,7 +110,8 @@ const healthColumns: DataColumn<ProviderHealthSnapshot>[] = [
 		id: "checked",
 		accessorFn: (r) => r.last_checked_at,
 		header: "Last checked",
-		cell: ({ row: { original: row } }) => formatDateTime(row.last_checked_at),
+		cell: ({ row: { original: row } }) =>
+			formatDateTime(row.last_checked_at),
 	},
 	{
 		id: "error",

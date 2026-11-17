@@ -41,7 +41,8 @@ export function NewRoute() {
 	});
 	const runtimes = useQuery({
 		queryKey: keys.system.runtime({ page: 1, perPage: 100 }),
-		queryFn: () => client.system.runtimeProviders({ page: 1, perPage: 100 }),
+		queryFn: () =>
+			client.system.runtimeProviders({ page: 1, perPage: 100 }),
 	});
 	const activeAccounts = (accounts.data?.items ?? []).filter(
 		(account) => account.active,
@@ -53,7 +54,9 @@ export function NewRoute() {
 	);
 	const methods =
 		runtime?.capabilities
-			.filter((capability) => capability.service_type === form.service_type)
+			.filter(
+				(capability) => capability.service_type === form.service_type,
+			)
 			.map((capability) => capability.payment_method) ?? [];
 
 	const create = useMutation({
@@ -101,7 +104,9 @@ export function NewRoute() {
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="collection">Collection</SelectItem>
+							<SelectItem value="collection">
+								Collection
+							</SelectItem>
 							<SelectItem value="disbursement">
 								Disbursement
 							</SelectItem>
@@ -115,7 +120,10 @@ export function NewRoute() {
 				>
 					<Select
 						items={Object.fromEntries(
-							methods.map((method) => [method, titleCase(method)]),
+							methods.map((method) => [
+								method,
+								titleCase(method),
+							]),
 						)}
 						value={form.payment_method}
 						onValueChange={(paymentMethod) =>

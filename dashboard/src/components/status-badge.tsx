@@ -2,12 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { titleCase } from "@/lib/format";
 
 type Variant =
-	| "default"
-	| "success"
-	| "warning"
-	| "info"
-	| "destructive"
-	| "outline";
+	"default" | "success" | "warning" | "info" | "destructive" | "outline";
 
 /**
  * Maps every status string the API reports onto a tone: green settled-good, blue in

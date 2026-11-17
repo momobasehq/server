@@ -79,7 +79,9 @@ function AppFields({
 					<CurrencySelect
 						id={`${prefix}-currency`}
 						value={value.currency}
-						onChange={(currency) => onChange({ ...value, currency })}
+						onChange={(currency) =>
+							onChange({ ...value, currency })
+						}
 					/>
 				</FormField>
 				{environment}
@@ -165,7 +167,10 @@ export function NewApp() {
 								)
 							}
 						>
-							<SelectTrigger id="app-environment" className="w-full">
+							<SelectTrigger
+								id="app-environment"
+								className="w-full"
+							>
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
@@ -241,7 +246,11 @@ function EditAppForm({ app }: { app: App }) {
 			invalid={incomplete(details)}
 			onSubmit={() => save.mutate()}
 		>
-			<AppFields prefix="edit-app" value={details} onChange={setDetails} />
+			<AppFields
+				prefix="edit-app"
+				value={details}
+				onChange={setDetails}
+			/>
 		</FormPage>
 	);
 }

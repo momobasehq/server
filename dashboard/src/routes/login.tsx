@@ -5,12 +5,7 @@ import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
 	InputGroup,
@@ -51,7 +46,9 @@ export function Login() {
 			<Card className="w-full max-w-md bg-transparent shadow-none ring-0">
 				<CardHeader className="justify-items-center text-center">
 					<Logo className="mb-2 size-16" />
-					<CardTitle className="text-xl">Sign in to Momobase</CardTitle>
+					<CardTitle className="text-xl">
+						Sign in to Momobase
+					</CardTitle>
 				</CardHeader>
 				<CardContent>
 					<form onSubmit={submit} className="flex flex-col gap-4">

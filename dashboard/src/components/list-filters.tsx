@@ -70,7 +70,13 @@ export function SearchBox({
 }
 
 /** FacetFilter is a dropdown of checkable values; checking several matches any of them. */
-export function FacetFilter({ list, facet }: { list: ListState; facet: Facet }) {
+export function FacetFilter({
+	list,
+	facet,
+}: {
+	list: ListState;
+	facet: Facet;
+}) {
 	const selected = list.filters[facet.field] ?? [];
 	const toggle = (value: string, on: boolean) =>
 		list.setFilter(
@@ -84,7 +90,11 @@ export function FacetFilter({ list, facet }: { list: ListState; facet: Facet }) 
 		<DropdownMenu>
 			<DropdownMenuTrigger
 				render={
-					<Button variant="outline" size="sm" className="border-dashed">
+					<Button
+						variant="outline"
+						size="sm"
+						className="border-dashed"
+					>
 						<ListFilter />
 						{facet.label}
 						{selected.length > 0 && (
@@ -134,7 +144,11 @@ export function CreatedFilter({ list }: { list: ListState }) {
 		<DropdownMenu>
 			<DropdownMenuTrigger
 				render={
-					<Button variant="outline" size="sm" className="border-dashed">
+					<Button
+						variant="outline"
+						size="sm"
+						className="border-dashed"
+					>
 						<CalendarRange />
 						{rangeLabels[list.created ?? "any"]}
 					</Button>
@@ -147,7 +161,9 @@ export function CreatedFilter({ list }: { list: ListState }) {
 						value={list.created ?? "any"}
 						onValueChange={(value) =>
 							list.setCreated(
-								value === "any" ? undefined : (value as CreatedRange),
+								value === "any"
+									? undefined
+									: (value as CreatedRange),
 							)
 						}
 					>

@@ -24,7 +24,11 @@ import {
 } from "momobase";
 
 const providerFacets = [
-	{ field: "environment", label: "Environment", options: ["sandbox", "production"] },
+	{
+		field: "environment",
+		label: "Environment",
+		options: ["sandbox", "production"],
+	},
 ] as const;
 
 import { useAuth } from "@/hooks/use-auth";
@@ -134,7 +138,8 @@ export function Providers() {
 			id: "version",
 			accessorFn: (r) => r.config_version,
 			header: "Config",
-			cell: ({ row: { original: account } }) => `v${account.config_version}`,
+			cell: ({ row: { original: account } }) =>
+				`v${account.config_version}`,
 		},
 		{
 			id: "updated",
@@ -227,7 +232,9 @@ export function Providers() {
 							columns={[
 								{
 									id: "provider",
-									accessorFn: (r) => r.provider_code ?? r.provider_account_id,
+									accessorFn: (r) =>
+										r.provider_code ??
+										r.provider_account_id,
 									header: "Provider",
 									cell: ({ row: { original: row } }) => (
 										<code>
@@ -240,7 +247,8 @@ export function Providers() {
 									id: "country",
 									accessorFn: (r) => r.country,
 									header: "Country",
-									cell: ({ row: { original: row } }) => row.country,
+									cell: ({ row: { original: row } }) =>
+										row.country,
 								},
 								{
 									id: "status",
@@ -280,7 +288,8 @@ export function Providers() {
 									id: "error",
 									accessorFn: (r) => r.error,
 									header: "Error",
-									cell: ({ row: { original: row } }) => row.error ?? "—",
+									cell: ({ row: { original: row } }) =>
+										row.error ?? "—",
 								},
 							]}
 							rows={balances.items}

@@ -17,8 +17,10 @@ export const keys = {
 		all: ["system"] as const,
 		info: () => [...keys.system.all, "info"] as const,
 		health: () => [...keys.system.all, "health"] as const,
-		workers: (query: ListKey) => [...keys.system.all, "workers", query] as const,
-		runtime: (query: ListKey) => [...keys.system.all, "runtime", query] as const,
+		workers: (query: ListKey) =>
+			[...keys.system.all, "workers", query] as const,
+		runtime: (query: ListKey) =>
+			[...keys.system.all, "runtime", query] as const,
 	},
 	authz: {
 		all: ["authz"] as const,
@@ -39,7 +41,8 @@ export const keys = {
 	},
 	providers: {
 		all: ["providers"] as const,
-		list: (query: ListKey) => [...keys.providers.all, "list", query] as const,
+		list: (query: ListKey) =>
+			[...keys.providers.all, "list", query] as const,
 		detail: (id: string) => [...keys.providers.all, "detail", id] as const,
 		registry: () => [...keys.providers.all, "registry"] as const,
 		health: (query: ListKey) =>
@@ -58,8 +61,10 @@ export const keys = {
 	},
 	transactions: {
 		all: ["transactions"] as const,
-		list: (query: ListKey) => [...keys.transactions.all, "list", query] as const,
-		detail: (id: string) => [...keys.transactions.all, "detail", id] as const,
+		list: (query: ListKey) =>
+			[...keys.transactions.all, "list", query] as const,
+		detail: (id: string) =>
+			[...keys.transactions.all, "detail", id] as const,
 	},
 	audit: {
 		all: ["audit"] as const,
