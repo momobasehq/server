@@ -1,7 +1,8 @@
-import type { ListOptions } from "momobase";
-
-/** Page is the pagination slice a list query is showing. */
-export type Page = Required<Pick<ListOptions, "page" | "perPage">>;
+/**
+ * ListKey is everything a list request sends: page, size, search, sort and filters.
+ * Keying on all of it caches each filtered view apart from the others.
+ */
+export type ListKey = object;
 
 /**
  * keys is the single source of query keys for the whole dashboard.
@@ -16,8 +17,8 @@ export const keys = {
 		all: ["system"] as const,
 		info: () => [...keys.system.all, "info"] as const,
 		health: () => [...keys.system.all, "health"] as const,
-		workers: (page: Page) => [...keys.system.all, "workers", page] as const,
-		runtime: (page: Page) => [...keys.system.all, "runtime", page] as const,
+		workers: (query: ListKey) => [...keys.system.all, "workers", query] as const,
+		runtime: (query: ListKey) => [...keys.system.all, "runtime", query] as const,
 	},
 	authz: {
 		all: ["authz"] as const,
@@ -27,28 +28,28 @@ export const keys = {
 	},
 	users: {
 		all: ["users"] as const,
-		list: (page: Page) => [...keys.users.all, "list", page] as const,
+		list: (query: ListKey) => [...keys.users.all, "list", query] as const,
 	},
 	apps: {
 		all: ["apps"] as const,
-		list: (page: Page) => [...keys.apps.all, "list", page] as const,
+		list: (query: ListKey) => [...keys.apps.all, "list", query] as const,
 		detail: (id: string) => [...keys.apps.all, "detail", id] as const,
-		credentials: (id: string, page: Page) =>
-			[...keys.apps.all, "credentials", id, page] as const,
+		credentials: (id: string, query: ListKey) =>
+			[...keys.apps.all, "credentials", id, query] as const,
 	},
 	providers: {
 		all: ["providers"] as const,
-		list: (page: Page) => [...keys.providers.all, "list", page] as const,
+		list: (query: ListKey) => [...keys.providers.all, "list", query] as const,
 		detail: (id: string) => [...keys.providers.all, "detail", id] as const,
 		registry: () => [...keys.providers.all, "registry"] as const,
-		health: (page: Page) =>
-			[...keys.providers.all, "health", page] as const,
-		balances: (page: Page) =>
-			[...keys.providers.all, "balances", page] as const,
+		health: (query: ListKey) =>
+			[...keys.providers.all, "health", query] as const,
+		balances: (query: ListKey) =>
+			[...keys.providers.all, "balances", query] as const,
 	},
 	routes: {
 		all: ["routes"] as const,
-		list: (page: Page) => [...keys.routes.all, "list", page] as const,
+		list: (query: ListKey) => [...keys.routes.all, "list", query] as const,
 	},
 	analytics: {
 		all: ["analytics"] as const,
@@ -57,10 +58,11 @@ export const keys = {
 	},
 	transactions: {
 		all: ["transactions"] as const,
-		list: (page: Page) => [...keys.transactions.all, "list", page] as const,
+		list: (query: ListKey) => [...keys.transactions.all, "list", query] as const,
+		detail: (id: string) => [...keys.transactions.all, "detail", id] as const,
 	},
 	audit: {
 		all: ["audit"] as const,
-		list: (page: Page) => [...keys.audit.all, "list", page] as const,
+		list: (query: ListKey) => [...keys.audit.all, "list", query] as const,
 	},
 } as const;

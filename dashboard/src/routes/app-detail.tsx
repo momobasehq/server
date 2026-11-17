@@ -58,7 +58,12 @@ import {
 	type AppCredential,
 	type ChargeRule,
 	type CreatedCredential,
+	type CredentialListQuery,
 } from "momobase";
+
+const credentialFacets = [
+	{ field: "status", label: "Status", options: ["active", "revoked"] },
+] as const;
 
 import { useAuth } from "@/hooks/use-auth";
 import { usePagedQuery } from "@/hooks/use-paged-query";
@@ -191,9 +196,12 @@ export function AppDetail() {
 		enabled: Boolean(appId),
 	});
 	const paged = usePagedQuery(
-		(page) => keys.apps.credentials(appId, page),
-		(page) => client.apps.credentials(appId, page),
-		{ enabled: showCredentials && Boolean(appId) },
+		(query) => keys.apps.credentials(appId, query),
+		(query: CredentialListQuery) => client.apps.credentials(appId, query),
+		{
+			enabled: showCredentials && Boolean(appId),
+			filters: credentialFacets.map((facet) => facet.field),
+		},
 	);
 
 	async function refreshCredentials() {
@@ -300,6 +308,7 @@ export function AppDetail() {
 			id: "name",
 			accessorFn: (r) => r.name,
 			header: "Name",
+			meta: { sortKey: "name" },
 			cell: ({ row: { original: credential } }) => credential.name || "—",
 		},
 		{
@@ -322,6 +331,7 @@ export function AppDetail() {
 			id: "status",
 			accessorFn: (r) => r.status,
 			header: "Status",
+			meta: { sortKey: "status" },
 			cell: ({ row: { original: credential } }) => (
 				<StatusBadge status={credential.status} />
 			),
@@ -330,6 +340,7 @@ export function AppDetail() {
 			id: "used",
 			accessorFn: (r) => r.last_used_at,
 			header: "Last used",
+			meta: { sortKey: "last_used_at" },
 			cell: ({ row: { original: credential } }) =>
 				formatDateTime(credential.last_used_at),
 		},
@@ -537,6 +548,9 @@ export function AppDetail() {
 							<CardContent>
 								<DataTable
 									tableId="credentials"
+									list={paged.list}
+									facets={credentialFacets}
+									searchPlaceholder="Search name or client ID…"
 									columns={columns}
 									rows={paged.items}
 									rowKey={(credential) => credential.id}

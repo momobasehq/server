@@ -1,6 +1,8 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { toast } from "sonner";
 
 import { DataTable, type DataColumn } from "@/components/data-table";
 import { PaginationControls } from "@/components/pagination-controls";
@@ -32,7 +34,38 @@ import {
 	titleCase,
 } from "@/lib/format";
 import { keys } from "@/lib/query-keys";
-import type { AdminTransaction, ServiceType } from "momobase";
+import {
+	PaymentMethods,
+	type AdminTransaction,
+	type ServiceType,
+	type TransactionListQuery,
+	type TransactionStatus,
+} from "momobase";
+
+const statuses = [
+	"pending",
+	"processing",
+	"succeeded",
+	"failed",
+	"unknown",
+	"cancelled",
+	"expired",
+] as const satisfies readonly TransactionStatus[];
+
+const facets = [
+	{ field: "status", label: "Status", options: statuses },
+	{
+		field: "serviceType",
+		label: "Service",
+		options: ["collection", "disbursement"],
+	},
+	{ field: "paymentMethod", label: "Method", options: PaymentMethods },
+] as const;
+
+/** transactionLink is a shareable URL that opens one transaction's details. */
+function transactionLink(id: string) {
+	return `${window.location.origin}${window.location.pathname}#/transactions?tx=${encodeURIComponent(id)}`;
+}
 
 /** Polling cadence while live updates are on: fresh enough to watch a payment settle. */
 const liveInterval = 5_000;
@@ -89,7 +122,7 @@ const columns: DataColumn<AdminTransaction>[] = [
 		id: "amount",
 		accessorFn: (r) => r.amount,
 		header: "Amount",
-		meta: { align: "end" },
+		meta: { align: "end", sortKey: "amount" },
 		cell: ({ row: { original: tx } }) => (
 			<span className="tabular-nums">{signedAmount(tx)}</span>
 		),
@@ -128,12 +161,14 @@ const columns: DataColumn<AdminTransaction>[] = [
 		id: "status",
 		accessorFn: (r) => r.status,
 		header: "Status",
+		meta: { sortKey: "status" },
 		cell: ({ row: { original: tx } }) => <StatusBadge status={tx.status} />,
 	},
 	{
 		id: "created",
 		accessorFn: (r) => r.created_at,
 		header: "Created",
+		meta: { sortKey: "created_at" },
 		cell: ({ row: { original: tx } }) => <Timestamp value={tx.created_at} />,
 	},
 ];
@@ -144,17 +179,47 @@ export function Transactions() {
 	const [live, setLive] = useState(false);
 	const paged = usePagedQuery(
 		keys.transactions.list,
-		(page) => client.transactions.list(page),
-		{ refetchInterval: live && liveInterval },
+		(query: TransactionListQuery) => client.transactions.list(query),
+		{
+			refetchInterval: live && liveInterval,
+			filters: facets.map((facet) => facet.field),
+		},
 	);
-	const [selected, setSelected] = useState<AdminTransaction>();
+
+	// The open transaction lives in the URL, so a copied link reopens it. A row on the
+	// current page opens at once; any other is fetched by ID.
+	const [params, setParams] = useSearchParams();
+	const selectedId = params.get("tx") ?? undefined;
+	const onPage = paged.items.find((tx) => tx.id === selectedId);
+	const fetched = useQuery({
+		queryKey: keys.transactions.detail(selectedId ?? ""),
+		queryFn: () => client.transactions.get(selectedId ?? ""),
+		enabled: Boolean(selectedId) && !onPage,
+	});
+	const selected = onPage ?? fetched.data;
+	const select = (tx?: AdminTransaction) =>
+		setParams((current) => {
+			const next = new URLSearchParams(current);
+			if (tx) next.set("tx", tx.id);
+			else next.delete("tx");
+			return next;
+		});
+
 	const withActions = useMemo(
 		() => [
 			...columns,
 			rowActionsColumn<AdminTransaction>((tx) => [
-				{ label: "View details", onSelect: () => setSelected(tx) },
+				{ label: "View details", onSelect: () => select(tx) },
+				{
+					label: "Copy link",
+					onSelect: () =>
+						void navigator.clipboard
+							.writeText(transactionLink(tx.id))
+							.then(() => toast.success("Link copied")),
+				},
 			]),
 		],
+		// select only writes the URL, so the columns never need rebuilding for it.
 		[],
 	);
 
@@ -180,9 +245,13 @@ export function Transactions() {
 					rowKey={(tx) => tx.id}
 					loading={paged.loading}
 					empty="No payments have been created yet."
-					onRowClick={setSelected}
+					onRowClick={select}
 					tableId="transactions"
 					columns={withActions}
+					list={paged.list}
+					facets={facets}
+					createdFilter
+					searchPlaceholder="Search reference, account or ID…"
 				/>
 				<PaginationControls
 					page={paged.page}
@@ -195,23 +264,27 @@ export function Transactions() {
 				/>
 			</CardContent>
 			<TransactionDialog
+				open={Boolean(selectedId)}
 				transaction={selected}
-				onClose={() => setSelected(undefined)}
+				onClose={() => select(undefined)}
 			/>
 		</Card>
 	);
 }
 
 function TransactionDialog({
+	open,
 	transaction,
 	onClose,
 }: {
+	/** Open while the URL names a transaction, even before it has loaded. */
+	open: boolean;
 	transaction?: AdminTransaction;
 	onClose: () => void;
 }) {
 	return (
 		<Dialog
-			open={Boolean(transaction)}
+			open={open}
 			onOpenChange={(open) => !open && onClose()}
 		>
 			<DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-3xl">

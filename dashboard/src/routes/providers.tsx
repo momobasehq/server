@@ -52,7 +52,12 @@ import {
 	AdminPermissions,
 	type ChargeSchedule,
 	type ProviderAccount,
+	type ProviderAccountListQuery,
 } from "momobase";
+
+const providerFacets = [
+	{ field: "environment", label: "Environment", options: ["sandbox", "production"] },
+] as const;
 
 import { useAuth } from "@/hooks/use-auth";
 import { usePagedQuery } from "@/hooks/use-paged-query";
@@ -473,8 +478,10 @@ function ConfigureDialog({
 export function Providers() {
 	const { client, can } = useAuth();
 	const queryClient = useQueryClient();
-	const paged = usePagedQuery(keys.providers.list, (page) =>
-		client.providers.list(page),
+	const paged = usePagedQuery(
+		keys.providers.list,
+		(query: ProviderAccountListQuery) => client.providers.list(query),
+		{ filters: providerFacets.map((facet) => facet.field) },
 	);
 	// Balances are their own permission, which read_only does not hold, so the card is
 	// hidden rather than left to fail — and its query never fires.
@@ -514,6 +521,7 @@ export function Providers() {
 			id: "name",
 			accessorFn: (r) => r.name,
 			header: "Name",
+			meta: { sortKey: "name" },
 			cell: ({ row: { original: account } }) => (
 				<Link
 					className="font-medium underline-offset-4 hover:underline"
@@ -527,6 +535,7 @@ export function Providers() {
 			id: "code",
 			accessorFn: (r) => r.provider_code,
 			header: "Provider",
+			meta: { sortKey: "provider_code" },
 			cell: ({ row: { original: account } }) => (
 				<code>{account.provider_code}</code>
 			),
@@ -574,6 +583,7 @@ export function Providers() {
 			id: "updated",
 			accessorFn: (r) => r.updated_at,
 			header: "Updated",
+			meta: { sortKey: "updated_at" },
 			cell: ({ row: { original: account } }) =>
 				formatDateTime(account.updated_at),
 		},
@@ -623,6 +633,9 @@ export function Providers() {
 				<CardContent>
 					<DataTable
 						tableId="providers"
+						list={paged.list}
+						facets={providerFacets}
+						searchPlaceholder="Search name, code or ID…"
 						columns={columns}
 						rows={paged.items}
 						rowKey={(account) => account.id}

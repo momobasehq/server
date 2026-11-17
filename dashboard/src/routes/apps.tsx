@@ -3,7 +3,17 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
-import { AdminPermissions, type App, type ChargeSchedule } from "momobase";
+import {
+	AdminPermissions,
+	type App,
+	type AppListQuery,
+	type ChargeSchedule,
+} from "momobase";
+
+const appFacets = [
+	{ field: "status", label: "Status", options: ["active", "disabled", "suspended"] },
+	{ field: "environment", label: "Environment", options: ["sandbox", "production"] },
+] as const;
 
 import { DataTable, type DataColumn } from "@/components/data-table";
 import { ChargeFields, zeroCharges } from "@/components/charge-fields";
@@ -191,8 +201,10 @@ function CreateAppDialog({
 export function Apps() {
 	const navigate = useNavigate();
 	const { client } = useAuth();
-	const paged = usePagedQuery(keys.apps.list, (page) =>
-		client.apps.list(page),
+	const paged = usePagedQuery(
+		keys.apps.list,
+		(query: AppListQuery) => client.apps.list(query),
+		{ filters: appFacets.map((facet) => facet.field) },
 	);
 	const [creating, setCreating] = useState(false);
 
@@ -203,6 +215,7 @@ export function Apps() {
 			header: "Name",
 			// Underlined unconditionally: with hover-only underline this read as plain text,
 			// so the detail page — and every credential on it — looked like it did not exist.
+			meta: { sortKey: "name" },
 			cell: ({ row: { original: app } }) => (
 				<Link
 					to={`/apps/${app.id}`}
@@ -235,6 +248,7 @@ export function Apps() {
 			id: "status",
 			accessorFn: (r) => r.status,
 			header: "Status",
+			meta: { sortKey: "status" },
 			cell: ({ row: { original: app } }) => <StatusBadge status={app.status} />,
 		},
 		{
@@ -247,6 +261,7 @@ export function Apps() {
 			id: "created",
 			accessorFn: (r) => r.created_at,
 			header: "Created",
+			meta: { sortKey: "created_at" },
 			cell: ({ row: { original: app } }) => formatDateTime(app.created_at),
 		},
 		// Status, credentials, and the tester all live on the detail page, so the menu
@@ -277,6 +292,10 @@ export function Apps() {
 			<CardContent>
 				<DataTable
 					tableId="apps"
+					list={paged.list}
+					facets={appFacets}
+					createdFilter
+					searchPlaceholder="Search name, description or ID…"
 					columns={columns}
 					rows={paged.items}
 					rowKey={(app) => app.id}

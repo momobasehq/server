@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
 	columnFilteringFeature,
 	columnVisibilityFeature,
@@ -19,14 +19,23 @@ import {
 	type Row,
 	type RowData,
 	type RowSelectionState,
+	type SortingState,
 } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 
 import { ColumnToggle, useColumnVisibility } from "@/components/column-toggle";
+import {
+	CreatedFilter,
+	FacetFilter,
+	ResetFilters,
+	SearchBox,
+	type Facet,
+} from "@/components/list-filters";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { ListState } from "@/hooks/use-paged-query";
 import { cn } from "@/lib/utils";
 import {
 	Table,
@@ -63,8 +72,9 @@ const base = {
 };
 
 /**
- * The shadcn data-table guide's feature set. Lists are paged on the server, so search
- * and sorting act on the loaded page only, hence "Filter rows" rather than "Search".
+ * The shadcn data-table guide's feature set. A table given a `list` runs search, sort
+ * and filters on the server; without one they act on the loaded page only, hence its
+ * "Filter rows" rather than "Search".
  */
 export const features = tableFeatures({
 	...base,
@@ -80,6 +90,8 @@ export const features = tableFeatures({
 	columnMeta: {} as {
 		/** Right-aligns numeric columns. */
 		align?: "start" | "end";
+		/** The SDK sort field for this column. With a `list`, only these columns sort. */
+		sortKey?: string;
 	},
 });
 
@@ -110,6 +122,13 @@ interface DataTableProps<T extends RowData> {
 	canSelect?: (row: T) => boolean;
 	/** Extra toolbar controls, beside search and the Columns menu. */
 	toolbar?: ReactNode;
+	/** Server-side search, sort and filters from usePagedQuery. */
+	list?: ListState;
+	/** Filters the toolbar offers; needs `list`. */
+	facets?: readonly Facet[];
+	/** Offers a created-at window; needs `list`. */
+	createdFilter?: boolean;
+	searchPlaceholder?: string;
 }
 
 /**
@@ -128,20 +147,51 @@ export function DataTable<T extends RowData>({
 	onRowSelectionChange,
 	canSelect,
 	toolbar,
+	list,
+	facets = [],
+	createdFilter,
+	searchPlaceholder,
 }: DataTableProps<T>) {
 	const [globalFilter, setGlobalFilter] = useState("");
 	const visibility = useColumnVisibility(tableId);
+	// On the server only declared sort fields work, so other columns stop offering it.
+	const tableColumns = useMemo(
+		() =>
+			list
+				? columns.map((column) => ({
+						...column,
+						enableSorting: Boolean(column.meta?.sortKey),
+					}))
+				: columns,
+		[columns, list],
+	);
+	const sortColumn = list?.sort
+		? columns.find((column) => column.meta?.sortKey === list.sort?.field)?.id
+		: undefined;
+	const sorting: SortingState =
+		list?.sort && sortColumn ? [{ id: sortColumn, desc: list.sort.desc }] : [];
+	const onSortingChange: OnChangeFn<SortingState> = (updater) => {
+		const [next] = typeof updater === "function" ? updater(sorting) : updater;
+		const field = next
+			? columns.find((column) => column.id === next.id)?.meta?.sortKey
+			: undefined;
+		list?.setSort(field ? { field, desc: next.desc } : undefined);
+	};
 	const table = useTable({
 		features,
-		columns,
+		columns: tableColumns,
 		data: rows,
 		getRowId: rowKey,
 		globalFilterFn: "contains",
+		manualSorting: Boolean(list),
+		manualFiltering: Boolean(list),
+		...(list && { onSortingChange }),
 		enableRowSelection: canSelect
 			? (row) => canSelect(row.original)
 			: true,
 		state: {
 			globalFilter,
+			...(list && { sorting }),
 			columnVisibility: visibility.columnVisibility,
 			...(rowSelection && { rowSelection }),
 		},
@@ -155,13 +205,24 @@ export function DataTable<T extends RowData>({
 	return (
 		<div className="flex flex-col gap-2">
 			<div className="flex flex-wrap items-center gap-2">
-				<Input
-					placeholder="Filter rows…"
-					aria-label="Filter rows"
-					value={globalFilter}
-					onChange={(event) => setGlobalFilter(event.target.value)}
-					className="h-7 max-w-xs"
-				/>
+				{list ? (
+					<>
+						<SearchBox list={list} placeholder={searchPlaceholder} />
+						{facets.map((facet) => (
+							<FacetFilter key={facet.field} list={list} facet={facet} />
+						))}
+						{createdFilter && <CreatedFilter list={list} />}
+						<ResetFilters list={list} />
+					</>
+				) : (
+					<Input
+						placeholder="Filter rows…"
+						aria-label="Filter rows"
+						value={globalFilter}
+						onChange={(event) => setGlobalFilter(event.target.value)}
+						className="h-7 max-w-xs"
+					/>
+				)}
 				{toolbar}
 				<ColumnToggle table={table} />
 			</div>
@@ -265,7 +326,7 @@ export function DataTable<T extends RowData>({
 									colSpan={visibleCount}
 									className="text-muted-foreground py-8 text-center"
 								>
-									{rows.length > 0
+									{rows.length > 0 || list?.narrowed
 										? "No rows match this filter."
 										: (empty ?? "Nothing to show yet.")}
 								</TableCell>

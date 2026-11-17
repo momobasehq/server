@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { usePagedQuery } from "@/hooks/use-paged-query";
 import { formatDateTime, titleCase } from "@/lib/format";
 import { keys } from "@/lib/query-keys";
-import type { AuditLog } from "momobase";
+import type { AuditLog, AuditLogListQuery } from "momobase";
 
 /** Party stacks an entity or actor type over its ID, cut to prefix and tail; hover shows it whole. */
 function Party({ type, id }: { type: string; id?: string }) {
@@ -37,6 +37,7 @@ const columns: DataColumn<AuditLog>[] = [
 		id: "action",
 		accessorFn: (r) => r.action,
 		header: "Action",
+		meta: { sortKey: "action" },
 		cell: ({ row: { original: log } }) => <ActionBadge action={log.action} />,
 	},
 	{
@@ -65,6 +66,7 @@ const columns: DataColumn<AuditLog>[] = [
 		id: "at",
 		accessorFn: (r) => r.created_at,
 		header: "When",
+		meta: { sortKey: "created_at" },
 		cell: ({ row: { original: log } }) => formatDateTime(log.created_at),
 	},
 ];
@@ -72,8 +74,10 @@ const columns: DataColumn<AuditLog>[] = [
 /** Audit lists administrative and system actions. */
 export function Audit() {
 	const { client } = useAuth();
-	const paged = usePagedQuery(keys.audit.list, (page) =>
-		client.transactions.auditLogs(page),
+	const paged = usePagedQuery(
+		keys.audit.list,
+		// Actions and entities are free-form, so search and the date range narrow it.
+		(query: AuditLogListQuery) => client.transactions.auditLogs(query),
 	);
 
 	return (
@@ -87,6 +91,9 @@ export function Audit() {
 			<CardContent>
 				<DataTable
 					tableId="audit"
+					list={paged.list}
+					createdFilter
+					searchPlaceholder="Search action, entity, actor or IP…"
 					columns={columns}
 					rows={paged.items}
 					rowKey={(log) => log.id}

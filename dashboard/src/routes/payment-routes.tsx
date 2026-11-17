@@ -5,10 +5,17 @@ import { Link } from "react-router";
 import { toast } from "sonner";
 import {
 	AdminPermissions,
+	PaymentMethods,
 	type PaymentMethod,
 	type PaymentRoute,
+	type PaymentRouteListQuery,
 	type ServiceType,
 } from "momobase";
+
+const routeFacets = [
+	{ field: "serviceType", label: "Service", options: ["collection", "disbursement"] },
+	{ field: "paymentMethod", label: "Method", options: PaymentMethods },
+] as const;
 
 import { DataTable, type DataColumn } from "@/components/data-table";
 import { GuardedAction } from "@/components/guarded-action";
@@ -238,8 +245,10 @@ function CreateRouteDialog({
 export function PaymentRoutes() {
 	const { client } = useAuth();
 	const queryClient = useQueryClient();
-	const paged = usePagedQuery(keys.routes.list, (page) =>
-		client.routes.list(page),
+	const paged = usePagedQuery(
+		keys.routes.list,
+		(query: PaymentRouteListQuery) => client.routes.list(query),
+		{ filters: routeFacets.map((facet) => facet.field) },
 	);
 	const [creating, setCreating] = useState(false);
 
@@ -292,7 +301,7 @@ export function PaymentRoutes() {
 			id: "priority",
 			accessorFn: (r) => r.priority,
 			header: "Priority",
-			meta: { align: "end" },
+			meta: { align: "end", sortKey: "priority" },
 			cell: ({ row: { original: route } }) => route.priority,
 		},
 		{
@@ -340,6 +349,9 @@ export function PaymentRoutes() {
 			<CardContent>
 				<DataTable
 					tableId="routes"
+					list={paged.list}
+					facets={routeFacets}
+					searchPlaceholder="Search method or provider account…"
 					columns={columns}
 					rows={paged.items}
 					rowKey={(route) => route.id}
